@@ -26,19 +26,19 @@ impl TokenRule {
 pub struct TokenSequence {
     select: Option<String>,
     rule: TokenRule,
-    next: Option<Box<TokenSequence>>,
+    branches: Vec<TokenSequence>,
     on_fail: Option<String>
 }
 
 impl TokenSequence {
     pub fn new(select: Option<String>,
                rule: TokenRule,
-               next: Option<Box<TokenSequence>>,
+               branches: Vec<TokenSequence>,
                on_fail: Option<String>) -> Self {
         Self {
             select,
             rule,
-            next,
+            branches,
             on_fail
         }
     }
@@ -69,12 +69,19 @@ impl TokenSequence {
             map.insert(select.to_string(), token);
         }
 
-        match &self.next {
-            Some(sequence) => {
-                sequence.try_parse_sequence(token_iter, map)
-            }
-            None => ParseResult::Ok(()),
+        if self.branches.is_empty() {
+            return ParseResult::Ok(());
         }
+
+        for branch in &self.branches {
+            match branch.try_parse_sequence(token_iter, map) {
+                ParseResult::Ok(_) => return ParseResult::Ok(()),
+                ParseResult::Err(err) => return ParseResult::Err(err),
+                _ => {}
+            }
+        }
+
+        ParseResult::Skip
     }
 }
 
@@ -88,14 +95,12 @@ impl TokenRegex {
     }
 
     pub fn try_parse<'a>(&self, token_iter: &mut TokenIter<'a>) -> ParseResult<HashMap<String, &'a Token>> {
-        token_iter.mark_start();
         let mut map = HashMap::new();
         match self.try_parse_internal(token_iter, &mut map) {
             ParseResult::Ok(_) => {
                 ParseResult::Ok(map)
             }
             err => {
-                token_iter.revert();
                 err.map(|_| map)
             }
         }
@@ -103,12 +108,72 @@ impl TokenRegex {
 
     fn try_parse_internal<'a>(&self, token_iter: &mut TokenIter<'a>, map: &mut HashMap<String, &'a Token>) -> ParseResult<()> {
         for branch in &self.branches {
+            token_iter.mark_start();
             match branch.try_parse_sequence(token_iter, map) {
                 ParseResult::Ok(_) => return ParseResult::Ok(()),
-                ParseResult::Err(err) => return ParseResult::Err(err),
-                _ => {}
+                ParseResult::Err(err) => {
+                    token_iter.revert();
+                    return ParseResult::Err(err)
+                },
+                _ => token_iter.revert()
             }
         }
         ParseResult::Skip
+    }
+}
+
+pub struct TokenEnclosing {
+    pub open: TokenRule,
+    pub close: TokenRule,
+    pub open_fail: String,
+    pub close_fail: String
+}
+
+impl TokenEnclosing {
+    pub fn parentheses() -> Self {
+        Self {
+            open: TokenRule::Divider("(".to_string()),
+            close: TokenRule::Divider(")".to_string()),
+            open_fail: "Expected '('".to_string(),
+            close_fail: "Expected ')'".to_string()
+        }
+    }
+
+    pub fn try_parse<'a>(&self, token_iter: &mut TokenIter<'a>) -> ParseResult<TokenIter<'a>> {
+        token_iter.mark_start();
+        let first = match token_iter.borrow_next() {
+            None => return ParseResult::Err(vec![ParseError::indexed(&self.open_fail, token_iter.index)]),
+            Some(token) => token
+        };
+        if !self.open.matches(&first.token_type) {
+            token_iter.revert();
+            return ParseResult::Err(vec![ParseError::indexed(&self.open_fail, token_iter.index)]); // original == current - 1
+        }
+
+        let mut start = token_iter.index;
+        let mut num_open = 1u32;
+        while num_open > 0 {
+            let token = match token_iter.borrow_next() {
+                None => {
+                    let idx = token_iter.index;
+                    token_iter.revert();
+                    return ParseResult::Err(vec![ParseError::indexed(&self.close_fail, idx - 1)]);
+                },
+                Some(token) => token
+            };
+
+            if self.open.matches(&token.token_type) {
+                num_open += 1;
+            }
+            if self.close.matches(&token.token_type) {
+                num_open -= 1;
+            }
+        }
+
+        ParseResult::Ok(TokenIter {
+            tokens: &token_iter.tokens[..token_iter.index - 1],
+            index: start,
+            start: vec![],
+        })
     }
 }

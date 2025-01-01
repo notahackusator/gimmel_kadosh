@@ -21,6 +21,13 @@ impl ParseError {
     pub fn indexed<D>(reason: D, index: usize) -> Self where D: Display {
         Self::Indexed { reason: reason.to_string(), index }
     }
+
+    pub fn get_reason(&self) -> &str {
+        match self {
+            ParseError::Indexed { reason, .. } => &reason,
+            ParseError::Reason { reason } => &reason
+        }
+    }
 }
 
 pub trait FormatInCode {

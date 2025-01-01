@@ -1,13 +1,14 @@
 use std::any::Any;
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 use crate::condition;
 use crate::lexer::prelude::{Token, TokenType};
 use crate::parser::errors::ParseError;
 use crate::parser::token_iter::TokenIter;
-use crate::parser::parseable::{Parseable, ParseResult};
+use crate::parser::parseable::{huh, Parseable, ParseResult};
 
-use super::prelude::{Buf, ErrAction, Executor, Param};
+use super::prelude::{Buf, ErrAction, Executor, Param, TokenEnclosing, TokenRegex, TokenRule, TokenSequence};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Expression {
@@ -17,37 +18,27 @@ pub struct Expression {
 
 impl Parseable for Expression {
     fn try_parse(token_iter: &mut TokenIter) -> ParseResult<Self> {
-        let first: Buf<BaseValue> = Rc::new(RefCell::new(None));
-        let first_parse: ParseResult<()> = Executor::new()
-            .node(first.clone(), ErrAction::Error)
-            .execute(token_iter);
-        match first_parse {
-            ParseResult::Ok(_) => {},
-            ParseResult::Err(err) => return ParseResult::Err(err),
-            ParseResult::Skip => return ParseResult::Skip,
-        }
-        let mut base_values: Vec<BaseValue> = vec![first.take().unwrap()];
-        let mut operators: Vec<Operator> = vec![];
-        // dbg!(&base_values, &operators);
-        if token_iter.has_next() {
-            while let ParseResult::Err(_) = token_iter.divider(Param::Value(":"), ErrAction::Error) {
-                let operator: Buf<Operator> = Rc::new(RefCell::new(None));
-                let base_value: Buf<BaseValue> = Rc::new(RefCell::new(None));
+        let first = huh!(BaseValue::try_parse(token_iter));
+        let mut base_values = vec![first];
+        let mut operators = vec![];
 
-                let parse: ParseResult<()> = Executor::new()
-                    .node(operator.clone(), ErrAction::Error)
-                    .node(base_value.clone(), ErrAction::Error)
-                    .execute(token_iter);
-                match parse {
-                    ParseResult::Ok(_) => {},
-                    ParseResult::Err(err) => return ParseResult::Err(err),
-                    ParseResult::Skip => return ParseResult::Skip,
-                }
-
-                base_values.push(base_value.take().unwrap());
-                operators.push(operator.take().unwrap());
+        let end_regex = TokenRegex::new(vec![
+            TokenSequence::new(None, TokenRule::Divider(":".to_string()), vec![], None),
+            TokenSequence::new(None, TokenRule::Divider(",".to_string()), vec![], None)
+        ]);
+        while token_iter.has_next() {
+            if end_regex.try_parse(token_iter).is_ok() {
+                token_iter.index -= 1;
+                break;
             }
+
+            let operator = huh!(Operator::try_parse(token_iter));
+            let base_value = huh!(BaseValue::try_parse(token_iter));
+
+            operators.push(operator);
+            base_values.push(base_value);
         }
+
         ParseResult::Ok(Self {
             base_values: base_values.into(),
             operators: operators.into()
@@ -68,61 +59,67 @@ pub enum BaseValue {
 
 impl Parseable for BaseValue {
     fn try_parse(token_iter: &mut TokenIter) -> ParseResult<Self> {
-        dbg!(token_iter.index, &token_iter.tokens[token_iter.index]);
-        let function_name: Buf<Token> = Rc::new(RefCell::new(None));
-        let function_params: Buf<Vec<Box<dyn Any>>> = Rc::new(RefCell::new(None));
-        let value: Buf<Token> = Rc::new(RefCell::new(None));
-        let parse: ParseResult<()> = Executor::new()
-            .cases(vec![
-                Executor::new()
-                    .id(Param::Value("תוצאות"), ErrAction::Skip)
-                    .id(Param::Value("טקס"), ErrAction::Error)
-                    .id(Param::Buf(function_name.clone()), ErrAction::Error)
-                    .condition(condition!(bufs: function_name, |index| {
-                        let mut token: Token = function_name.clone().take().unwrap();
-                        if let TokenType::Identifier(ref mut name) = &mut token.token_type {
-                            if name.starts_with("ה") {
-                                name.remove(0);
-                                function_name.replace(Some(token));
-                                ParseResult::Ok(())
-                            } else {
-                                ParseResult::Err(vec![
-                                    ParseError::indexed("אי אפשר להתחיל טקס ללא ה' הידיעה", index)
-                                ])
-                            }
-                        } else {
-                            unreachable!()
-                        }
-                    }), ErrAction::Error)
-                    .nodes::<Expression>(function_params.clone(), TokenType::Divider(",".into()), TokenType::Divider(";".into()), TokenType::Divider(":".into()), ErrAction::Error)
-                    .condition(condition!(bufs: , |i| {dbg!("Good!", i); ParseResult::Ok(())}), ErrAction::Error),
-                Executor::new()
-                    .any(value.clone(), ErrAction::Error)
-            ], ErrAction::Error)
-            .execute(token_iter);
-        dbg!(&function_name, &function_params, &value);
-        match parse {
-            ParseResult::Ok(_) => {},
+        let name_regex = TokenRegex::new(vec![
+            TokenSequence::new(Some("name".to_string()), TokenRule::Id, vec![], None),
+            TokenSequence::new(Some("value".to_string()), TokenRule::Value, vec![], None)
+        ]);
+        let name = match name_regex.try_parse(token_iter) {
+            ParseResult::Ok(map) => {
+                #[allow(suspicious_double_ref_op)] // <--
+                if let Some(name) = map.get("name") {
+                    name.clone()
+                } else {
+                    return ParseResult::Ok(Self::Value {
+                        token: map.get("value").unwrap().clone().clone() // <--
+                    });
+                }
+            }
             ParseResult::Err(err) => return ParseResult::Err(err),
             ParseResult::Skip => return ParseResult::Skip
-        }
-        if let Some(token) = value.take() {
-            let value: Self = Self::Value { token };
-            dbg!(&value);
-            ParseResult::Ok(value)
-        } else {
-            let Some(name) = function_name.take() else { unreachable!() };
-            let Some(params_any) = function_params.take() else { unreachable!() };
-            let mut parameters: Vec<Expression> = vec![];
-            for param_any in params_any {
-                let cast_parameter: Expression = (&*param_any).downcast_ref::<Expression>().unwrap().clone();
-                dbg!(&cast_parameter);
-                parameters.push(cast_parameter);
+        };
+        let comma = TokenRule::Divider(",".to_string());
+
+        let parentheses = TokenEnclosing::parentheses();
+        let mut param_iter = match parentheses.try_parse(token_iter) {
+            ParseResult::Ok(params) => params,
+            ParseResult::Err(errors) => {
+                let err = &errors[0];
+                return if err.get_reason() == &parentheses.open_fail {
+                    ParseResult::Ok(Self::Value {
+                        token: name.clone(),
+                    })
+                } else {
+                    ParseResult::Err(errors)
+                }
             }
-            let fn_call: Self = Self::FunctionCall { name, parameters: parameters.into() };
-            dbg!(&fn_call);
-            ParseResult::Ok(fn_call)
+            ParseResult::Skip => unreachable!()
+        };
+
+        let mut params = vec![];
+        while param_iter.has_next() {
+            match Expression::try_parse(&mut param_iter) {
+                ParseResult::Ok(expr) => params.push(expr),
+                ParseResult::Err(err) => return ParseResult::Err(err),
+                ParseResult::Skip => unreachable!()
+            }
+
+            if !param_iter.has_next() {
+                break;
+            }
+
+            let next = param_iter.next().unwrap();
+            if !comma.matches(&next.token_type) {
+                return ParseResult::Err(vec![ParseError::indexed(
+                    format!("Expected comma, found {}", next.token_type),
+                    param_iter.index - 1
+                )]);
+            }
         }
+
+        ParseResult::Ok(Self::FunctionCall {
+            name: name.clone(),
+            parameters: params.into_boxed_slice()
+        })
     }
 }
 
@@ -137,19 +134,23 @@ pub enum Operator {
 
 impl Parseable for Operator {
     fn try_parse(token_iter: &mut TokenIter) -> ParseResult<Self> {
-        let this: Buf<Self> = Rc::new(RefCell::new(None));
-        let parse: ParseResult<()> = Executor::new().cases(vec![
-            Executor::new().id(Param::Value("ועוד"), ErrAction::Skip).condition({let this = this.clone(); Box::new(move |_| { this.replace(Some(Operator::Add)); ParseResult::Ok(()) }) }, ErrAction::Skip),
-            Executor::new().id(Param::Value("פחות"), ErrAction::Skip).condition({let this = this.clone(); Box::new(move |_| { this.replace(Some(Operator::Sub)); ParseResult::Ok(()) }) }, ErrAction::Skip),
-            Executor::new().id(Param::Value("כפול"), ErrAction::Skip).condition({let this = this.clone(); Box::new(move |_| { this.replace(Some(Operator::Mul)); ParseResult::Ok(()) }) }, ErrAction::Skip),
-            Executor::new().id(Param::Value("חלקי"), ErrAction::Skip).condition({let this = this.clone(); Box::new(move |_| { this.replace(Some(Operator::Div)); ParseResult::Ok(()) }) }, ErrAction::Skip),
-            Executor::new().id(Param::Value("שארית"), ErrAction::Skip).condition({let this = this.clone(); Box::new(move |_| { this.replace(Some(Operator::Mod)); ParseResult::Ok(()) }) }, ErrAction::Skip),
-        ], ErrAction::Error).execute(token_iter);
-        match parse {
-            ParseResult::Ok(_) => {},
-            ParseResult::Err(err) => return ParseResult::Err(err),
-            ParseResult::Skip => return ParseResult::Skip
+        let token = match token_iter.next() {
+            None => return ParseResult::Err(vec![ParseError::indexed(
+                "Expected operator, but no tokens were found", token_iter.index)]),
+            Some(token) => token
+        };
+
+        if let TokenType::Identifier(div) = token.token_type {
+            match div.as_str() {
+                "ועוד" => ParseResult::Ok(Self::Add),
+                "פחות" => ParseResult::Ok(Self::Sub),
+                "כפול" => ParseResult::Ok(Self::Mul),
+                "חלקי" => ParseResult::Ok(Self::Div),
+                "שארית" => ParseResult::Ok(Self::Mod),
+                _ => ParseResult::Skip
+            }
+        } else {
+            ParseResult::Skip
         }
-        ParseResult::Ok(this.take().unwrap())
     }
 }

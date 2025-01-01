@@ -4,6 +4,17 @@
 use crate::parser::errors::ParseError;
 use crate::parser::prelude::TokenIter;
 
+macro_rules! huh {
+    ($x:expr) => {
+        match $x {
+            ParseResult::Ok(x) => x,
+            ParseResult::Err(err) => return ParseResult::Err(err),
+            ParseResult::Skip => return ParseResult::Skip
+        }
+    };
+}
+pub(crate) use huh;
+
 pub trait Parseable {
     fn try_parse(token_iter: &mut TokenIter) -> ParseResult<Self> where Self: Sized;
 }

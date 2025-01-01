@@ -260,7 +260,9 @@ impl<'a> TokenIter<'a> {
     }
 
     pub fn revert(&mut self) {
-        self.index = self.start.pop().unwrap();
+        if let Some(index) = self.start.pop() {
+            self.index = index;
+        }
     }
 }
 
