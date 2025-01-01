@@ -2,13 +2,13 @@ use std::fmt::{Display, Formatter, Write};
 
 #[derive(Clone, Debug, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum TokenType {
-    Identifier(Box<str>),
-    Integer(Box<str>),
-    Decimal(Box<str>, Box<str>),
-    String(Box<str>),
-    Char(Box<str>),
-    Divider(Box<str>),
-    Operator(Box<str>)
+    Identifier(String),
+    Integer(String),
+    Decimal(String, String),
+    String(String),
+    Char(String),
+    Divider(String),
+    Operator(String)
 }
 
 impl Display for TokenType {
