@@ -129,7 +129,7 @@ mod parser {
         }));
 
 
-        let tokens = interpret("1 ועוד 2 פחות 4 כפול פעולה(2 חלקי 3, 4 שארית 2)", &Regexes::default());
+        let tokens = interpret(r#"1 ועוד "2" פחות 4 כפול פעולה(2 חלקי 3, 4 שארית 2)"#, &Regexes::default());
         let mut token_iter = TokenIter::new(&tokens);
         let expression = Expression::try_parse(&mut token_iter);
 
@@ -147,8 +147,8 @@ mod parser {
                     },
                     BaseValue::Value {
                         token: Token {
-                            token_type: TokenType::Integer(
-                                "2".to_string(),
+                            token_type: TokenType::String(
+                                "\"2\"".to_string(),
                             ),
                             line: 1,
                             col: 8,
@@ -160,7 +160,7 @@ mod parser {
                                 "4".to_string(),
                             ),
                             line: 1,
-                            col: 15,
+                            col: 17,
                         },
                     },
                     BaseValue::FunctionCall {
@@ -169,7 +169,7 @@ mod parser {
                                 "פעולה".to_string(),
                             ),
                             line: 1,
-                            col: 22,
+                            col: 24,
                         },
                         parameters: Box::new([
                             Expression {
@@ -180,7 +180,7 @@ mod parser {
                                                 "2".to_string(),
                                             ),
                                             line: 1,
-                                            col: 28,
+                                            col: 30,
                                         },
                                     },
                                     BaseValue::Value {
@@ -189,7 +189,7 @@ mod parser {
                                                 "3".to_string(),
                                             ),
                                             line: 1,
-                                            col: 35,
+                                            col: 37,
                                         },
                                     },
                                 ]),
@@ -205,7 +205,7 @@ mod parser {
                                                 "4".to_string(),
                                             ),
                                             line: 1,
-                                            col: 38,
+                                            col: 40,
                                         },
                                     },
                                     BaseValue::Value {
@@ -214,7 +214,7 @@ mod parser {
                                                 "2".to_string(),
                                             ),
                                             line: 1,
-                                            col: 46,
+                                            col: 48,
                                         },
                                     },
                                 ]),
@@ -641,6 +641,92 @@ mod parser {
                     },
                 ),
             ],
+        ));
+    }
+
+    #[test]
+    pub fn functions() {
+        let tokens = interpret(r#"
+        ויהי פעולה ושמה הדפס_שלום הלוקחת (שם) (
+            הדפס("שלום " ועוד שם ועוד "!"):
+        )
+        "#, &Regexes::default());
+        let mut token_iter = TokenIter::new(&tokens);
+        assert_eq!(Function::try_parse(&mut token_iter), ParseResult::Ok(
+            Function {
+                name: Token {
+                    token_type: TokenType::Identifier(
+                        "הדפס_שלום".to_string(),
+                    ),
+                    line: 2,
+                    col: 25,
+                },
+                params: vec![
+                    Token {
+                        token_type: TokenType::Identifier(
+                            "שם".to_string()
+                        ),
+                        line: 2,
+                        col: 43
+                    }
+                ],
+                code: vec![
+                    Node::Expression(
+                        Expression {
+                            base_values: Box::new([
+                                BaseValue::FunctionCall {
+                                    name: Token {
+                                        token_type: TokenType::Identifier(
+                                            "הדפס".to_string(),
+                                        ),
+                                        line: 3,
+                                        col: 13,
+                                    },
+                                    parameters: Box::new([
+                                        Expression {
+                                            base_values: Box::new([
+                                                BaseValue::Value {
+                                                    token: Token {
+                                                        token_type: TokenType::String(
+                                                            "\"שלום \"".to_string(),
+                                                        ),
+                                                        line: 3,
+                                                        col: 18,
+                                                    },
+                                                },
+                                                BaseValue::Value {
+                                                    token: Token {
+                                                        token_type: TokenType::Identifier(
+                                                            "שם".to_string(),
+                                                        ),
+                                                        line: 3,
+                                                        col: 31,
+                                                    },
+                                                },
+                                                BaseValue::Value {
+                                                    token: Token {
+                                                        token_type: TokenType::String(
+                                                            "\"!\"".to_string(),
+                                                        ),
+                                                        line: 3,
+                                                        col: 39,
+                                                    },
+                                                },
+                                            ]),
+                                            operators: Box::new([
+                                                Operator::Add,
+                                                Operator::Add
+                                            ]),
+                                        },
+                                    ]),
+                                },
+                            ]),
+                            operators: Box::new([]),
+                        },
+                    ),
+                    Node::Eol,
+                ],
+            },
         ));
     }
 }

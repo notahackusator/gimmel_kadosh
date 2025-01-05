@@ -1,4 +1,5 @@
 use crate::lexer::prelude::*;
+use crate::parser::function::Function;
 use crate::parser::prelude::*;
 
 pub struct Eol;
@@ -22,6 +23,7 @@ pub enum Node {
     If(If),
     ElseIf(ElseIf),
     Else(Else),
+    Function(Function),
     Expression(Expression),
     Eol,
 }
@@ -50,6 +52,10 @@ impl Parseable for Node {
         }
         match Expression::try_parse(token_iter) {
             ParseResult::Ok(x) => return ParseResult::Ok(Self::Expression(x)),
+            _ => {}
+        }
+        match Function::try_parse(token_iter) {
+            ParseResult::Ok(x) => return ParseResult::Ok(Self::Function(x)),
             _ => {}
         }
         match Eol::try_parse(token_iter) {
