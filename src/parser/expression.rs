@@ -2,13 +2,8 @@ use std::any::Any;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use crate::condition;
-use crate::lexer::prelude::{Token, TokenType};
-use crate::parser::errors::ParseError;
-use crate::parser::token_iter::TokenIter;
-use crate::parser::parseable::{huh, Parseable, ParseResult};
-
-use super::prelude::{Buf, ErrAction, Executor, Param, TokenEnclosing, TokenRegex, TokenRule, TokenSequence};
+use crate::lexer::prelude::*;
+use crate::parser::prelude::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Expression {
@@ -18,22 +13,19 @@ pub struct Expression {
 
 impl Parseable for Expression {
     fn try_parse(token_iter: &mut TokenIter) -> ParseResult<Self> {
-        let first = huh!(BaseValue::try_parse(token_iter));
+        parse_start!(token_iter start);
+        let first = huh!(token_iter start BaseValue::try_parse(token_iter));
         let mut base_values = vec![first];
         let mut operators = vec![];
 
-        let end_regex = TokenRegex::new(vec![
-            TokenSequence::new(None, TokenRule::Divider(":".to_string()), vec![], None),
-            TokenSequence::new(None, TokenRule::Divider(",".to_string()), vec![], None)
-        ]);
         while token_iter.has_next() {
-            if end_regex.try_parse(token_iter).is_ok() {
+            if Eol::try_parse(token_iter).is_ok() {
                 token_iter.index -= 1;
                 break;
             }
 
-            let operator = huh!(Operator::try_parse(token_iter));
-            let base_value = huh!(BaseValue::try_parse(token_iter));
+            let operator = skip_to_err!(Operator::try_parse(token_iter), "ציפה לאופרטור", token_iter.index);
+            let base_value = skip_to_err!(BaseValue::try_parse(token_iter), "ציפה לערך", token_iter.index);
 
             operators.push(operator);
             base_values.push(base_value);
@@ -129,14 +121,20 @@ pub enum Operator {
     Sub,
     Mul,
     Div,
-    Mod
+    Mod,
+    Lt,
+    Le,
+    Eq,
+    Ge,
+    Gt,
+    Ne
 }
 
 impl Parseable for Operator {
     fn try_parse(token_iter: &mut TokenIter) -> ParseResult<Self> {
         let token = match token_iter.next() {
             None => return ParseResult::Err(vec![ParseError::indexed(
-                "Expected operator, but no tokens were found", token_iter.index)]),
+                "ציפה לאופרטור, אך לא נמצאו אסימונים", token_iter.index)]),
             Some(token) => token
         };
 
@@ -147,9 +145,21 @@ impl Parseable for Operator {
                 "כפול" => ParseResult::Ok(Self::Mul),
                 "חלקי" => ParseResult::Ok(Self::Div),
                 "שארית" => ParseResult::Ok(Self::Mod),
-                _ => ParseResult::Skip
+
+                "קטן_מ" => ParseResult::Ok(Self::Lt),
+                "לכל_היותר" => ParseResult::Ok(Self::Le),
+                "שווה_ל" => ParseResult::Ok(Self::Eq),
+                "לפחות" => ParseResult::Ok(Self::Ge),
+                "גדול_מ" => ParseResult::Ok(Self::Gt),
+
+                "אינו" => ParseResult::Ok(Self::Ne),
+                _ => {
+                    token_iter.index -= 1;
+                    ParseResult::Skip
+                }
             }
         } else {
+            token_iter.index -= 1;
             ParseResult::Skip
         }
     }

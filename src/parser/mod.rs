@@ -5,6 +5,7 @@ mod node;
 mod var;
 mod expression;
 mod token_regex;
+mod conditionals;
 
 pub mod prelude {
     pub use super::token_iter::*;
@@ -14,4 +15,5 @@ pub mod prelude {
     pub use super::var::*;
     pub use super::expression::*;
     pub use super::token_regex::*;
+    pub use super::conditionals::*;
 }

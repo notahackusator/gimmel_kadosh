@@ -48,7 +48,7 @@ impl TokenSequence {
             None => return match &self.on_fail {
                 None => ParseResult::Skip,
                 Some(expected) => ParseResult::Err(vec![ParseError::indexed(
-                    format!("{expected}, but no tokens were found"),
+                    format!("{expected}, אך לא נמצאו אסימונים"),
                     token_iter.index
                 )])
             },

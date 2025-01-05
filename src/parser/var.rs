@@ -1,13 +1,8 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
-use crate::condition;
-use crate::lexer::prelude::Token;
-use crate::parser::expression::Expression;
-use crate::parser::token_iter::TokenIter;
-use crate::parser::parseable::{Parseable, ParseResult};
-
-use super::prelude::{Buf, ErrAction, Executor, huh, Param, TokenRegex, TokenRule, TokenSequence};
+use crate::lexer::prelude::*;
+use crate::parser::prelude::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Var {
@@ -17,6 +12,7 @@ pub struct Var {
 
 impl Parseable for Var {
     fn try_parse(token_iter: &mut TokenIter) -> ParseResult<Self> {
+        parse_start!(token_iter start);
         let var_start_regex = TokenRegex::new(vec![
             TokenSequence::new(None, TokenRule::UniqueId("ויהי".to_string()), vec![
                 TokenSequence::new(None, TokenRule::UniqueId("משתנה".to_string()), vec![
@@ -37,10 +33,10 @@ impl Parseable for Var {
                 ], None)
             ], None)
         ]);
-        let map = huh!(var_start_regex.try_parse(token_iter));
+        let map = huh!(token_iter start var_start_regex.try_parse(token_iter));
         #[allow(suspicious_double_ref_op)]
         let name = map.get("name").unwrap().clone().clone();
-        let value = huh!(Expression::try_parse(token_iter));
+        let value = skip_to_err!(Expression::try_parse(token_iter), "ציפה לביטוי", token_iter.index);
         ParseResult::Ok(Self {
             name,
             value,

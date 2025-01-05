@@ -1,19 +1,38 @@
 // use std::convert::Infallible;
 // use std::ops::{ControlFlow, FromResidual, Try};
 
-use crate::parser::errors::ParseError;
-use crate::parser::prelude::TokenIter;
+use crate::parser::prelude::*;
 
 macro_rules! huh {
     ($x:expr) => {
         match $x {
-            ParseResult::Ok(x) => x,
-            ParseResult::Err(err) => return ParseResult::Err(err),
-            ParseResult::Skip => return ParseResult::Skip
+            crate::parser::prelude::ParseResult::Ok(x) => x,
+            crate::parser::prelude::ParseResult::Err(err) => return crate::parser::prelude::ParseResult::Err(err),
+            crate::parser::prelude::ParseResult::Skip => return crate::parser::prelude::ParseResult::Skip
+        }
+    };
+
+    ($token_iter:ident $start_index:ident $x:expr) => {
+        match $x {
+            crate::parser::prelude::ParseResult::Ok(x) => x,
+            crate::parser::prelude::ParseResult::Err(err) =>
+                result!($token_iter $start_index crate::parser::prelude::ParseResult::Err(err)),
+            crate::parser::prelude::ParseResult::Skip =>
+                result!($token_iter $start_index crate::parser::prelude::ParseResult::Skip)
+        }
+    }
+}
+
+macro_rules! skip_to_err {
+    ($x:expr, $err:expr, $index:expr) => {
+        match $x {
+            crate::parser::prelude::ParseResult::Ok(x) => x,
+            crate::parser::prelude::ParseResult::Err(err) => return crate::parser::prelude::ParseResult::Err(err),
+            crate::parser::prelude::ParseResult::Skip => return crate::parser::prelude::ParseResult::Err(vec![crate::parser::prelude::ParseError::indexed($err, $index)])
         }
     };
 }
-pub(crate) use huh;
+pub(crate) use {huh, skip_to_err};
 
 pub trait Parseable {
     fn try_parse(token_iter: &mut TokenIter) -> ParseResult<Self> where Self: Sized;

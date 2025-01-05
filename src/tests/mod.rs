@@ -235,6 +235,25 @@ mod parser {
     }
 
     #[test]
+    pub fn expression_errors() {
+        let tokens = interpret("אחד ועוד ", &Regexes::default());
+        let mut token_iter = TokenIter::new(&tokens);
+        let expression = Expression::try_parse(&mut token_iter);
+
+        assert_eq!(expression, ParseResult::Err(vec![
+            ParseError::indexed("ציפה לערך", 2)
+        ]));
+
+        let tokens = interpret("אחד ועודמילהשאינהאופרטור", &Regexes::default());
+        let mut token_iter = TokenIter::new(&tokens);
+        let expression = Expression::try_parse(&mut token_iter);
+
+        assert_eq!(expression, ParseResult::Err(vec![
+            ParseError::indexed("ציפה לאופרטור", 1)
+        ]));
+    }
+
+    #[test]
     pub fn variable() {
         let tokens = interpret("ויהי משתנה ושמו אחד וערכו 1:", &Regexes::default());
         let mut token_iter = TokenIter::new(&tokens);
@@ -301,6 +320,327 @@ mod parser {
                     ]),
                 },
             },
+        ));
+    }
+
+    #[test]
+    pub fn variable_errors() {
+        let tokens = interpret("ויהי משתנה ושמו אחד וערכו", &Regexes::default());
+        let mut token_iter = TokenIter::new(&tokens);
+        let variable = Var::try_parse(&mut token_iter);
+
+        assert_eq!(variable, ParseResult::Err(vec![
+            ParseError::indexed("ציפה לביטוי", 5)
+        ]));
+
+        let tokens = interpret("ויהי משתנה ושמו אלף", &Regexes::default());
+        let mut token_iter = TokenIter::new(&tokens);
+        let variable = Var::try_parse(&mut token_iter);
+
+        assert_eq!(variable, ParseResult::Err(vec![
+            ParseError::indexed("ציפה למילה 'וערכו', אך לא נמצאו אסימונים", 4)
+        ]));
+
+        let tokens = interpret("ויהי משתנה ושמו", &Regexes::default());
+        let mut token_iter = TokenIter::new(&tokens);
+        let variable = Var::try_parse(&mut token_iter);
+
+        assert_eq!(variable, ParseResult::Err(vec![
+            ParseError::indexed("המשתנה ציפה לשם, אך לא נמצאו אסימונים", 3)
+        ]));
+    }
+
+    #[test]
+    pub fn conditionals() {
+        let tokens = interpret(r#"
+        אם 1 ועוד 1 שווה_ל 2 (
+            הדפס("1 ועוד 1 שווה ל 2"):
+        )
+        ואם לא אך 3 פחות 3 שווה_ל 0 (
+            הדפס("3 פחות 3 שווה ל 0"):
+        )
+        ואם עדיין לא אך 2 חלקי 2 שווה_ל 1 (
+            הדפס("2 חלקי 2 שווה ל 1"):
+        )
+        ואם אפילו עדיין לא (
+            הדפס("אני לא יודע חשבון"):
+        )
+        "#, &Regexes::default());
+        // ^-- It might look like the if statements have 2 opening parentheses, but it's actually
+        // one open and one close. This is because open/close parentheses change direction depending
+        // on whether you're writing in RTL / LTR. Your IDE will probably think the final
+        // parenthesis is written it LTR instead of RTL and therefore format it for LTR.
+
+        // let mut token_iter = TokenIter::new(&tokens);
+        let nodes = parse(&tokens);
+
+        assert_eq!(nodes, ParseResult::Ok(
+            vec![
+                Node::If(
+                    If {
+                        condition: Expression {
+                            base_values: Box::new([
+                                BaseValue::Value {
+                                    token: Token {
+                                        token_type: TokenType::Integer(
+                                            "1".to_string(),
+                                        ),
+                                        line: 2,
+                                        col: 12,
+                                    },
+                                },
+                                BaseValue::Value {
+                                    token: Token {
+                                        token_type: TokenType::Integer(
+                                            "1".to_string(),
+                                        ),
+                                        line: 2,
+                                        col: 19,
+                                    },
+                                },
+                                BaseValue::Value {
+                                    token: Token {
+                                        token_type: TokenType::Integer(
+                                            "2".to_string(),
+                                        ),
+                                        line: 2,
+                                        col: 28,
+                                    },
+                                },
+                            ]),
+                            operators: Box::new([
+                                Operator::Add,
+                                Operator::Eq,
+                            ]),
+                        },
+                        code: vec![
+                            Node::Expression(
+                                Expression {
+                                    base_values: Box::new([
+                                        BaseValue::FunctionCall {
+                                            name: Token {
+                                                token_type: TokenType::Identifier(
+                                                    "הדפס".to_string(),
+                                                ),
+                                                line: 3,
+                                                col: 13,
+                                            },
+                                            parameters: Box::new([
+                                                Expression {
+                                                    base_values: Box::new([
+                                                        BaseValue::Value {
+                                                            token: Token {
+                                                                token_type: TokenType::String(
+                                                                    "\"1 ועוד 1 שווה ל 2\"".to_string(),
+                                                                ),
+                                                                line: 3,
+                                                                col: 18,
+                                                            },
+                                                        },
+                                                    ]),
+                                                    operators: Box::new([]),
+                                                },
+                                            ]),
+                                        },
+                                    ]),
+                                    operators: Box::new([]),
+                                },
+                            ),
+                            Node::Eol,
+                        ],
+                    },
+                ),
+                Node::ElseIf(
+                    ElseIf {
+                        level: 0,
+                        condition: Expression {
+                            base_values: Box::new([
+                                BaseValue::Value {
+                                    token: Token {
+                                        token_type: TokenType::Integer(
+                                            "3".to_string(),
+                                        ),
+                                        line: 5,
+                                        col: 19,
+                                    },
+                                },
+                                BaseValue::Value {
+                                    token: Token {
+                                        token_type: TokenType::Integer(
+                                            "3".to_string(),
+                                        ),
+                                        line: 5,
+                                        col: 26,
+                                    },
+                                },
+                                BaseValue::Value {
+                                    token: Token {
+                                        token_type: TokenType::Integer(
+                                            "0".to_string(),
+                                        ),
+                                        line: 5,
+                                        col: 35,
+                                    },
+                                },
+                            ]),
+                            operators: Box::new([
+                                Operator::Sub,
+                                Operator::Eq,
+                            ]),
+                        },
+                        code: vec![
+                            Node::Expression(
+                                Expression {
+                                    base_values: Box::new([
+                                        BaseValue::FunctionCall {
+                                            name: Token {
+                                                token_type: TokenType::Identifier(
+                                                    "הדפס".to_string(),
+                                                ),
+                                                line: 6,
+                                                col: 13,
+                                            },
+                                            parameters: Box::new([
+                                                Expression {
+                                                    base_values: Box::new([
+                                                        BaseValue::Value {
+                                                            token: Token {
+                                                                token_type: TokenType::String(
+                                                                    "\"3 פחות 3 שווה ל 0\"".to_string(),
+                                                                ),
+                                                                line: 6,
+                                                                col: 18,
+                                                            },
+                                                        },
+                                                    ]),
+                                                    operators: Box::new([]),
+                                                },
+                                            ]),
+                                        },
+                                    ]),
+                                    operators: Box::new([]),
+                                },
+                            ),
+                            Node::Eol,
+                        ],
+                    },
+                ),
+                Node::ElseIf(
+                    ElseIf {
+                        level: 2,
+                        condition: Expression {
+                            base_values: Box::new([
+                                BaseValue::Value {
+                                    token: Token {
+                                        token_type: TokenType::Integer(
+                                            "2".to_string(),
+                                        ),
+                                        line: 8,
+                                        col: 25,
+                                    },
+                                },
+                                BaseValue::Value {
+                                    token: Token {
+                                        token_type: TokenType::Integer(
+                                            "2".to_string(),
+                                        ),
+                                        line: 8,
+                                        col: 32,
+                                    },
+                                },
+                                BaseValue::Value {
+                                    token: Token {
+                                        token_type: TokenType::Integer(
+                                            "1".to_string(),
+                                        ),
+                                        line: 8,
+                                        col: 41,
+                                    },
+                                },
+                            ]),
+                            operators: Box::new([
+                                Operator::Div,
+                                Operator::Eq,
+                            ]),
+                        },
+                        code: vec![
+                            Node::Expression(
+                                Expression {
+                                    base_values: Box::new([
+                                        BaseValue::FunctionCall {
+                                            name: Token {
+                                                token_type: TokenType::Identifier(
+                                                    "הדפס".to_string(),
+                                                ),
+                                                line: 9,
+                                                col: 13,
+                                            },
+                                            parameters: Box::new([
+                                                Expression {
+                                                    base_values: Box::new([
+                                                        BaseValue::Value {
+                                                            token: Token {
+                                                                token_type: TokenType::String(
+                                                                    "\"2 חלקי 2 שווה ל 1\"".to_string(),
+                                                                ),
+                                                                line: 9,
+                                                                col: 18,
+                                                            },
+                                                        },
+                                                    ]),
+                                                    operators: Box::new([]),
+                                                },
+                                            ]),
+                                        },
+                                    ]),
+                                    operators: Box::new([]),
+                                },
+                            ),
+                            Node::Eol,
+                        ],
+                    },
+                ),
+                Node::Else(
+                    Else {
+                        level: 3,
+                        code: vec![
+                            Node::Expression(
+                                Expression {
+                                    base_values: Box::new([
+                                        BaseValue::FunctionCall {
+                                            name: Token {
+                                                token_type: TokenType::Identifier(
+                                                    "הדפס".to_string(),
+                                                ),
+                                                line: 12,
+                                                col: 13,
+                                            },
+                                            parameters: Box::new([
+                                                Expression {
+                                                    base_values: Box::new([
+                                                        BaseValue::Value {
+                                                            token: Token {
+                                                                token_type: TokenType::String(
+                                                                    "\"אני לא יודע חשבון\"".to_string(),
+                                                                ),
+                                                                line: 12,
+                                                                col: 18,
+                                                            },
+                                                        },
+                                                    ]),
+                                                    operators: Box::new([]),
+                                                },
+                                            ]),
+                                        },
+                                    ]),
+                                    operators: Box::new([]),
+                                },
+                            ),
+                            Node::Eol,
+                        ],
+                    },
+                ),
+            ],
         ));
     }
 }
