@@ -52,6 +52,10 @@ pub enum BaseValue {
     FunctionCall {
         name: Token,
         parameters: Box<[Expression]>
+    },
+    Constructor {
+        structure: Token,
+        parameters: Box<[Expression]>
     }
 }
 
@@ -75,7 +79,11 @@ impl Parseable for BaseValue {
             ParseResult::Err(err) => return ParseResult::Err(err),
             ParseResult::Skip => return ParseResult::Skip
         };
-        let comma = TokenRule::Divider(",".to_string());
+
+        let constructor_regex = TokenRegex::new(vec![
+            TokenSequence::new(None, TokenRule::UniqueId("חדש".to_string()), vec![], None)
+        ]);
+        let constructor = constructor_regex.try_parse(token_iter).is_ok();
 
         let parentheses = TokenEnclosing::parentheses();
         let mut param_iter = match parentheses.try_parse(token_iter) {
@@ -92,6 +100,8 @@ impl Parseable for BaseValue {
             }
             ParseResult::Skip => unreachable!()
         };
+
+        let comma = TokenRule::Divider(",".to_string());
 
         let mut params = vec![];
         while param_iter.has_next() {
@@ -114,10 +124,17 @@ impl Parseable for BaseValue {
             }
         }
 
-        ParseResult::Ok(Self::FunctionCall {
-            name: name.clone(),
-            parameters: params.into_boxed_slice()
-        })
+        if constructor {
+            ParseResult::Ok(Self::Constructor {
+                structure: name.clone(),
+                parameters: params.into_boxed_slice()
+            })
+        } else {
+            ParseResult::Ok(Self::FunctionCall {
+                name: name.clone(),
+                parameters: params.into_boxed_slice()
+            })
+        }
     }
 }
 

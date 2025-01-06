@@ -357,16 +357,16 @@ mod parser {
     pub fn conditionals() {
         let tokens = interpret(r#"
         אם 1 ועוד 1 שווה_ל 2 (
-            הדפס("1 ועוד 1 שווה ל 2"):
+            ויאמר("1 ועוד 1 שווה ל 2"):
         )
         ואם לא אך 3 פחות 3 שווה_ל 0 (
-            הדפס("3 פחות 3 שווה ל 0"):
+            ויאמר("3 פחות 3 שווה ל 0"):
         )
         ואם עדיין לא אך 2 חלקי 2 שווה_ל 1 (
-            הדפס("2 חלקי 2 שווה ל 1"):
+            ויאמר("2 חלקי 2 שווה ל 1"):
         )
         ואם אפילו עדיין לא (
-            הדפס("אני לא יודע חשבון"):
+            ויאמר("אני לא יודע חשבון"):
         )
         "#, &Regexes::default());
         // ^-- It might look like the if statements have 2 opening parentheses, but it's actually
@@ -374,7 +374,6 @@ mod parser {
         // on whether you're writing in RTL / LTR. Your IDE will probably think the final
         // parenthesis is written it LTR instead of RTL and therefore format it for LTR.
 
-        // let mut token_iter = TokenIter::new(&tokens);
         let nodes = parse(&tokens);
 
         assert_eq!(nodes, ParseResult::Ok(
@@ -423,7 +422,7 @@ mod parser {
                                         BaseValue::FunctionCall {
                                             name: Token {
                                                 token_type: TokenType::Identifier(
-                                                    "הדפס".to_string(),
+                                                    "ויאמר".to_string(),
                                                 ),
                                                 line: 3,
                                                 col: 13,
@@ -437,7 +436,7 @@ mod parser {
                                                                     "\"1 ועוד 1 שווה ל 2\"".to_string(),
                                                                 ),
                                                                 line: 3,
-                                                                col: 18,
+                                                                col: 19,
                                                             },
                                                         },
                                                     ]),
@@ -498,7 +497,7 @@ mod parser {
                                         BaseValue::FunctionCall {
                                             name: Token {
                                                 token_type: TokenType::Identifier(
-                                                    "הדפס".to_string(),
+                                                    "ויאמר".to_string(),
                                                 ),
                                                 line: 6,
                                                 col: 13,
@@ -512,7 +511,7 @@ mod parser {
                                                                     "\"3 פחות 3 שווה ל 0\"".to_string(),
                                                                 ),
                                                                 line: 6,
-                                                                col: 18,
+                                                                col: 19,
                                                             },
                                                         },
                                                     ]),
@@ -573,7 +572,7 @@ mod parser {
                                         BaseValue::FunctionCall {
                                             name: Token {
                                                 token_type: TokenType::Identifier(
-                                                    "הדפס".to_string(),
+                                                    "ויאמר".to_string(),
                                                 ),
                                                 line: 9,
                                                 col: 13,
@@ -587,7 +586,7 @@ mod parser {
                                                                     "\"2 חלקי 2 שווה ל 1\"".to_string(),
                                                                 ),
                                                                 line: 9,
-                                                                col: 18,
+                                                                col: 19,
                                                             },
                                                         },
                                                     ]),
@@ -613,7 +612,7 @@ mod parser {
                                         BaseValue::FunctionCall {
                                             name: Token {
                                                 token_type: TokenType::Identifier(
-                                                    "הדפס".to_string(),
+                                                    "ויאמר".to_string(),
                                                 ),
                                                 line: 12,
                                                 col: 13,
@@ -627,7 +626,7 @@ mod parser {
                                                                     "\"אני לא יודע חשבון\"".to_string(),
                                                                 ),
                                                                 line: 12,
-                                                                col: 18,
+                                                                col: 19,
                                                             },
                                                         },
                                                     ]),
@@ -651,7 +650,7 @@ mod parser {
     pub fn functions() {
         let tokens = interpret(r#"
         ויהי פעולה ושמה הדפס_שלום הלוקחת (שם) (
-            הדפס("שלום " ועוד שם ועוד "!"):
+            ויאמר("שלום " ועוד שם ועוד "!"):
         )
         "#, &Regexes::default());
         let mut token_iter = TokenIter::new(&tokens);
@@ -680,7 +679,7 @@ mod parser {
                                 BaseValue::FunctionCall {
                                     name: Token {
                                         token_type: TokenType::Identifier(
-                                            "הדפס".to_string(),
+                                            "ויאמר".to_string(),
                                         ),
                                         line: 3,
                                         col: 13,
@@ -694,7 +693,7 @@ mod parser {
                                                             "\"שלום \"".to_string(),
                                                         ),
                                                         line: 3,
-                                                        col: 18,
+                                                        col: 19,
                                                     },
                                                 },
                                                 BaseValue::Value {
@@ -703,7 +702,7 @@ mod parser {
                                                             "שם".to_string(),
                                                         ),
                                                         line: 3,
-                                                        col: 31,
+                                                        col: 32,
                                                     },
                                                 },
                                                 BaseValue::Value {
@@ -712,7 +711,7 @@ mod parser {
                                                             "\"!\"".to_string(),
                                                         ),
                                                         line: 3,
-                                                        col: 39,
+                                                        col: 40,
                                                     },
                                                 },
                                             ]),
@@ -729,6 +728,124 @@ mod parser {
                     ),
                     Node::Eol,
                 ],
+            },
+        ));
+    }
+
+    #[test]
+    pub fn structs() {
+        let tokens = interpret(r#"
+        ויהי אוסף תכונות ושמו בן_אדם (
+            שם_פרטי
+            שם_משפחה
+            תאריך_יום_הולדת
+        )
+
+        יהי משהו וערכו בן_אדם חדש ("בן", "אדם", "1/1/1970"):
+        "#, &Regexes::default());
+        let mut token_iter = TokenIter::new(&tokens);
+        assert_eq!(Struct::try_parse(&mut token_iter), ParseResult::Ok(
+            Struct {
+                name: Token {
+                    token_type: TokenType::Identifier(
+                        "בן_אדם".to_string(),
+                    ),
+                    line: 2,
+                    col: 31,
+                },
+                fields: vec![
+                    Token {
+                        token_type: TokenType::Identifier(
+                            "שם_פרטי".to_string(),
+                        ),
+                        line: 3,
+                        col: 13,
+                    },
+                    Token {
+                        token_type: TokenType::Identifier(
+                            "שם_משפחה".to_string(),
+                        ),
+                        line: 4,
+                        col: 13,
+                    },
+                    Token {
+                        token_type: TokenType::Identifier(
+                            "תאריך_יום_הולדת".to_string(),
+                        ),
+                        line: 5,
+                        col: 13,
+                    },
+                ],
+            },
+        ));
+
+        assert_eq!(Var::try_parse(&mut token_iter), ParseResult::Ok(
+            Var {
+                name: Token {
+                    token_type: TokenType::Identifier(
+                        "משהו".to_string(),
+                    ),
+                    line: 8,
+                    col: 13,
+                },
+                value: Expression {
+                    base_values: Box::new([
+                        BaseValue::Constructor {
+                            structure: Token {
+                                token_type: TokenType::Identifier(
+                                    "בן_אדם".to_string(),
+                                ),
+                                line: 8,
+                                col: 24,
+                            },
+                            parameters: Box::new([
+                                Expression {
+                                    base_values: Box::new([
+                                        BaseValue::Value {
+                                            token: Token {
+                                                token_type: TokenType::String(
+                                                    "\"בן\"".to_string(),
+                                                ),
+                                                line: 8,
+                                                col: 36,
+                                            },
+                                        },
+                                    ]),
+                                    operators: Box::new([]),
+                                },
+                                Expression {
+                                    base_values: Box::new([
+                                        BaseValue::Value {
+                                            token: Token {
+                                                token_type: TokenType::String(
+                                                    "\"אדם\"".to_string(),
+                                                ),
+                                                line: 8,
+                                                col: 42,
+                                            },
+                                        },
+                                    ]),
+                                    operators: Box::new([]),
+                                },
+                                Expression {
+                                    base_values: Box::new([
+                                        BaseValue::Value {
+                                            token: Token {
+                                                token_type: TokenType::String(
+                                                    "\"1/1/1970\"".to_string(),
+                                                ),
+                                                line: 8,
+                                                col: 49,
+                                            },
+                                        },
+                                    ]),
+                                    operators: Box::new([]),
+                                },
+                            ]),
+                        },
+                    ]),
+                    operators: Box::new([]),
+                },
             },
         ));
     }

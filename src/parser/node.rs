@@ -24,6 +24,7 @@ pub enum Node {
     ElseIf(ElseIf),
     Else(Else),
     Function(Function),
+    Struct(Struct),
     Expression(Expression),
     Eol,
 }
@@ -56,6 +57,10 @@ impl Parseable for Node {
         }
         match Function::try_parse(token_iter) {
             ParseResult::Ok(x) => return ParseResult::Ok(Self::Function(x)),
+            _ => {}
+        }
+        match Struct::try_parse(token_iter) {
+            ParseResult::Ok(x) => return ParseResult::Ok(Self::Struct(x)),
             _ => {}
         }
         match Eol::try_parse(token_iter) {
