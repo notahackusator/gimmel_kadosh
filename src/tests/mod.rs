@@ -951,4 +951,225 @@ mod parser {
             }
         ));
     }
+
+    #[test]
+    pub fn loops() {
+        let tokens = interpret(r#"
+        ויהי משתנה ושמו אינדקס וערכו 0:
+        כל עוד אינדקס קטן_מ 10 (
+            אם אינדקס שווה_ל 3 (
+                דלג
+            )
+            ואם לא אך אינדקס שווה_ל 6 (
+                עצור
+            )
+            ויאמר(אינדקס):
+            שנה את אינדקס להיות אינדקס ועוד 1:
+        )
+        "#, &Regexes::default());
+        let mut token_iter = TokenIter::new(&tokens);
+
+        assert!(Var::try_parse(&mut token_iter).is_ok());
+        while Eol::try_parse(&mut token_iter).is_ok() {}
+        assert_eq!(While::try_parse(&mut token_iter), ParseResult::Ok(
+            While {
+                condition: Expression {
+                    base_values: Box::new([
+                        BaseValue::Value {
+                            token: Token {
+                                token_type: TokenType::Identifier(
+                                    "אינדקס".to_string(),
+                                ),
+                                line: 3,
+                                col: 16,
+                            },
+                        },
+                        BaseValue::Value {
+                            token: Token {
+                                token_type: TokenType::Integer(
+                                    "10".to_string(),
+                                ),
+                                line: 3,
+                                col: 29,
+                            },
+                        },
+                    ]),
+                    operators: Box::new([
+                        Operator::Lt,
+                    ]),
+                },
+                code: vec![
+                    Node::If(
+                        If {
+                            condition: Expression {
+                                base_values: Box::new([
+                                    BaseValue::Value {
+                                        token: Token {
+                                            token_type: TokenType::Identifier(
+                                                "אינדקס".to_string()
+                                            ),
+                                            line: 4,
+                                            col: 16
+                                        }
+                                    },
+                                    BaseValue::Value {
+                                        token: Token {
+                                            token_type: TokenType::Integer(
+                                                "3".to_string()
+                                            ),
+                                            line: 4,
+                                            col: 30
+                                        }
+                                    }
+                                ]),
+                                operators: Box::new([
+                                    Operator::Eq
+                                ])
+                            },
+                            code: vec![
+                                Node::Expression(
+                                    Expression {
+                                        base_values: Box::new([
+                                            BaseValue::Value {
+                                                token: Token {
+                                                    token_type: TokenType::Identifier(
+                                                        "דלג".to_string()
+                                                    ),
+                                                    line: 5,
+                                                    col: 17
+                                                }
+                                            }
+                                        ]),
+                                        operators: Box::new([
+
+                                        ])
+                                    }
+                                )
+                            ]
+                        }
+                    ),
+                    Node::ElseIf(
+                        ElseIf {
+                            level: 0,
+                            condition: Expression {
+                                base_values: Box::new([
+                                    BaseValue::Value {
+                                        token: Token {
+                                            token_type: TokenType::Identifier(
+                                                "אינדקס".to_string()
+                                            ),
+                                            line: 7,
+                                            col: 23
+                                        }
+                                    },
+                                    BaseValue::Value {
+                                        token: Token {
+                                            token_type: TokenType::Integer(
+                                                "6".to_string()
+                                            ),
+                                            line: 7,
+                                            col: 37
+                                        }
+                                    }
+                                ]),
+                                operators: Box::new([
+                                    Operator::Eq
+                                ])
+                            },
+                            code: vec![
+                                Node::Expression(
+                                    Expression {
+                                        base_values: Box::new([
+                                            BaseValue::Value {
+                                                token: Token {
+                                                    token_type: TokenType::Identifier(
+                                                        "עצור".to_string()
+                                                    ),
+                                                    line: 8,
+                                                    col: 17
+                                                }
+                                            }
+                                        ]),
+                                        operators: Box::new([
+
+                                        ])
+                                    }
+                                )
+                            ]
+                        }
+                    ),
+                    Node::Expression(
+                        Expression {
+                            base_values: Box::new([
+                                BaseValue::FunctionCall {
+                                    name: Token {
+                                        token_type: TokenType::Identifier(
+                                            "ויאמר".to_string(),
+                                        ),
+                                        line: 10,
+                                        col: 13,
+                                    },
+                                    parameters: Box::new([
+                                        Expression {
+                                            base_values: Box::new([
+                                                BaseValue::Value {
+                                                    token: Token {
+                                                        token_type: TokenType::Identifier(
+                                                            "אינדקס".to_string(),
+                                                        ),
+                                                        line: 10,
+                                                        col: 19,
+                                                    },
+                                                },
+                                            ]),
+                                            operators: Box::new([]),
+                                        },
+                                    ]),
+                                },
+                            ]),
+                            operators: Box::new([]),
+                        },
+                    ),
+                    Node::Eol,
+                    Node::Change(
+                        Change {
+                            name: Token {
+                                token_type: TokenType::Identifier(
+                                    "אינדקס".to_string(),
+                                ),
+                                line: 11,
+                                col: 20,
+                            },
+                            value: Expression {
+                                base_values: Box::new([
+                                    BaseValue::Value {
+                                        token: Token {
+                                            token_type: TokenType::Identifier(
+                                                "אינדקס".to_string(),
+                                            ),
+                                            line: 11,
+                                            col: 33,
+                                        },
+                                    },
+                                    BaseValue::Value {
+                                        token: Token {
+                                            token_type: TokenType::Integer(
+                                                "1".to_string(),
+                                            ),
+                                            line: 11,
+                                            col: 45,
+                                        },
+                                    },
+                                ]),
+                                operators: Box::new([
+                                    Operator::Add,
+                                ]),
+                            },
+                        },
+                    ),
+                    Node::Eol,
+                ],
+            },
+        ));
+    }
 }

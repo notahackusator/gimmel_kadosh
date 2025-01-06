@@ -9,6 +9,7 @@ mod conditionals;
 mod function;
 mod structs;
 mod change;
+mod loops;
 
 pub mod prelude {
     pub use super::token_iter::*;
@@ -22,4 +23,5 @@ pub mod prelude {
     pub use super::function::*;
     pub use super::structs::*;
     pub use super::change::*;
+    pub use super::loops::*;
 }

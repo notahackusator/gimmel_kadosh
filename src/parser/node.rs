@@ -1,5 +1,6 @@
 use crate::lexer::prelude::*;
 use crate::parser::function::Function;
+use crate::parser::loops::{Break, Continue, While};
 use crate::parser::prelude::*;
 
 pub struct Eol;
@@ -26,6 +27,10 @@ pub enum Node {
     Function(Function),
     Struct(Struct),
     Expression(Expression),
+    Change(Change),
+    Break(Break),
+    Continue(Continue),
+    While(While),
     Eol,
 }
 
@@ -57,11 +62,33 @@ impl Parseable for Node {
         }
         match Function::try_parse(token_iter) {
             ParseResult::Ok(x) => return ParseResult::Ok(Self::Function(x)),
-            _ => {}
+            ParseResult::Err(vec) => return ParseResult::Err(vec),
+            ParseResult::Skip => {},
         }
         match Struct::try_parse(token_iter) {
             ParseResult::Ok(x) => return ParseResult::Ok(Self::Struct(x)),
-            _ => {}
+            ParseResult::Err(vec) => return ParseResult::Err(vec),
+            ParseResult::Skip => {},
+        }
+        match Change::try_parse(token_iter) {
+            ParseResult::Ok(x) => return ParseResult::Ok(Self::Change(x)),
+            ParseResult::Err(vec) => return ParseResult::Err(vec),
+            ParseResult::Skip => {},
+        }
+        match Break::try_parse(token_iter) {
+            ParseResult::Ok(x) => return ParseResult::Ok(Self::Break(x)),
+            ParseResult::Err(vec) => return ParseResult::Err(vec),
+            ParseResult::Skip => {},
+        }
+        match Continue::try_parse(token_iter) {
+            ParseResult::Ok(x) => return ParseResult::Ok(Self::Continue(x)),
+            ParseResult::Err(vec) => return ParseResult::Err(vec),
+            ParseResult::Skip => {},
+        }
+        match While::try_parse(token_iter) {
+            ParseResult::Ok(x) => return ParseResult::Ok(Self::While(x)),
+            ParseResult::Err(vec) => return ParseResult::Err(vec),
+            ParseResult::Skip => {},
         }
         match Eol::try_parse(token_iter) {
             ParseResult::Ok(_) => return ParseResult::Ok(Self::Eol),
