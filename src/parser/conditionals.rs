@@ -21,14 +21,17 @@ impl Parseable for If {
             return ParseResult::Skip;
         }
 
-        let condition = huh!(token_iter start Expression::try_parse(token_iter));
+        let condition = chain_err!(token_iter start Expression::try_parse(token_iter),
+            err: ParseError::new("בתוך תנאי"));
         let mut code = vec![];
 
-        let mut code_iter = huh!(token_iter start TokenEnclosing::parentheses().try_parse(token_iter));
+        let mut code_iter = chain_err!(token_iter start TokenEnclosing::parentheses().try_parse(token_iter),
+            err: ParseError::new("בתוך קוד מותנה"));
         while code_iter.has_next() {
             let node = Node::try_parse(&mut code_iter);
 
-            code.push(huh!(token_iter start node));
+            code.push(chain_err!(token_iter start node,
+                err: ParseError::new("בתוך קוד מותנה")));
         }
 
         ParseResult::Ok(Self {
@@ -40,9 +43,9 @@ impl Parseable for If {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ElseIf {
-    pub(crate) level: u8,
-    pub(crate) condition: Expression,
-    pub(crate) code: Vec<Node>
+    pub level: u8,
+    pub condition: Expression,
+    pub code: Vec<Node>
 }
 
 impl Parseable for ElseIf {
@@ -95,14 +98,17 @@ impl Parseable for ElseIf {
             return ParseResult::Skip;
         }
 
-        let condition = huh!(token_iter start Expression::try_parse(token_iter));
+        let condition = chain_err!(token_iter start Expression::try_parse(token_iter),
+            err: ParseError::indexed("בתוך תנאי", token_iter.index));
         let mut code = vec![];
 
-        let mut code_iter = huh!(token_iter start TokenEnclosing::parentheses().try_parse(token_iter));
+        let mut code_iter = chain_err!(token_iter start TokenEnclosing::parentheses().try_parse(token_iter),
+            err: ParseError::new("בתוך קוד מותנה"));
         while code_iter.has_next() {
             let node = Node::try_parse(&mut code_iter);
 
-            code.push(huh!(token_iter start node));
+            code.push(chain_err!(token_iter start node,
+                err: ParseError::new("בתוך קוד מותנה")));
         }
 
         ParseResult::Ok(Self {
@@ -115,8 +121,8 @@ impl Parseable for ElseIf {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Else {
-    pub(crate) level: u8,
-    pub(crate) code: Vec<Node>
+    pub level: u8,
+    pub code: Vec<Node>
 }
 
 impl Parseable for Else {
@@ -163,11 +169,13 @@ impl Parseable for Else {
 
         let mut code = vec![];
 
-        let mut code_iter = huh!(token_iter start TokenEnclosing::parentheses().try_parse(token_iter));
+        let mut code_iter = chain_err!(token_iter start TokenEnclosing::parentheses().try_parse(token_iter),
+            err: ParseError::new("בתוך קוד מותנה"));
         while code_iter.has_next() {
             let node = Node::try_parse(&mut code_iter);
 
-            code.push(huh!(token_iter start node));
+            code.push(chain_err!(token_iter start node,
+                err: ParseError::new("בתוך קוד מותנה")));
         }
 
         ParseResult::Ok(Self {

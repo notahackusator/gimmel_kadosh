@@ -107,15 +107,15 @@ impl TokenRegex {
     }
 
     fn try_parse_internal<'a>(&self, token_iter: &mut TokenIter<'a>, map: &mut HashMap<String, &'a Token>) -> ParseResult<()> {
+        let start = token_iter.index;
         for branch in &self.branches {
-            token_iter.mark_start();
             match branch.try_parse_sequence(token_iter, map) {
                 ParseResult::Ok(_) => return ParseResult::Ok(()),
                 ParseResult::Err(err) => {
-                    token_iter.revert();
+                    token_iter.index = start;
                     return ParseResult::Err(err)
                 },
-                _ => token_iter.revert()
+                _ => token_iter.index = start
             }
         }
         ParseResult::Skip
@@ -140,13 +140,13 @@ impl TokenEnclosing {
     }
 
     pub fn try_parse<'a>(&self, token_iter: &mut TokenIter<'a>) -> ParseResult<TokenIter<'a>> {
-        token_iter.mark_start();
+        let start = token_iter.index;
         let first = match token_iter.borrow_next() {
             None => return ParseResult::Err(vec![ParseError::indexed(&self.open_fail, token_iter.index)]),
             Some(token) => token
         };
         if !self.open.matches(&first.token_type) {
-            token_iter.revert();
+            token_iter.index = start;
             return ParseResult::Err(vec![ParseError::indexed(&self.open_fail, token_iter.index)]); // original == current - 1
         }
 
@@ -156,7 +156,7 @@ impl TokenEnclosing {
             let token = match token_iter.borrow_next() {
                 None => {
                     let idx = token_iter.index;
-                    token_iter.revert();
+                    token_iter.index = start;
                     return ParseResult::Err(vec![ParseError::indexed(&self.close_fail, idx - 1)]);
                 },
                 Some(token) => token

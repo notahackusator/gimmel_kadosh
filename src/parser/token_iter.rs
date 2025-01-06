@@ -24,16 +24,6 @@ impl<'a> TokenIter<'a> {
         self.index < self.tokens.len()
     }
 
-    pub fn mark_start(&mut self) {
-        self.start.push(self.index);
-    }
-
-    pub fn revert(&mut self) {
-        if let Some(index) = self.start.pop() {
-            self.index = index;
-        }
-    }
-
     pub fn next(&mut self) -> Option<Token> {
         if self.index >= self.tokens.len() {
             None

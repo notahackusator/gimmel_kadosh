@@ -33,10 +33,12 @@ impl Parseable for Var {
                 ], None)
             ], None)
         ]);
-        let map = huh!(token_iter start var_start_regex.try_parse(token_iter));
+        let map = chain_err!(token_iter start var_start_regex.try_parse(token_iter),
+            err: ParseError::new("בתוך משתנה"));
         #[allow(suspicious_double_ref_op)]
         let name = map.get("name").unwrap().clone().clone();
-        let value = skip_to_err!(Expression::try_parse(token_iter), "ציפה לביטוי", token_iter.index);
+        let value = chain_err!(token_iter start Expression::try_parse(token_iter),
+            err: ParseError::new("בתוך משתנה"));
         ParseResult::Ok(Self {
             name,
             value,

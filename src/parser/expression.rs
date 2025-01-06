@@ -14,7 +14,9 @@ pub struct Expression {
 impl Parseable for Expression {
     fn try_parse(token_iter: &mut TokenIter) -> ParseResult<Self> {
         parse_start!(token_iter start);
-        let first = huh!(token_iter start BaseValue::try_parse(token_iter));
+        let first = chain_err!(token_iter start BaseValue::try_parse(token_iter),
+            err: ParseError::indexed("בתוך ביטוי", token_iter.index),
+            skip: ParseError::indexed("ציפה לערך התחלתי עבור ביטוי", token_iter.index));
         let mut base_values = vec![first];
         let mut operators = vec![];
 
@@ -24,8 +26,12 @@ impl Parseable for Expression {
                 break;
             }
 
-            let operator = skip_to_err!(Operator::try_parse(token_iter), "ציפה לאופרטור", token_iter.index);
-            let base_value = skip_to_err!(BaseValue::try_parse(token_iter), "ציפה לערך", token_iter.index);
+            let operator = chain_err!(token_iter start Operator::try_parse(token_iter),
+                err: ParseError::indexed("ציפה לאופרטור", token_iter.index),
+                skip: ParseError::indexed("ציפה לאופרטור", token_iter.index));
+            let base_value = chain_err!(token_iter start BaseValue::try_parse(token_iter),
+                err: ParseError::indexed("ציפה לערך", token_iter.index),
+                skip: ParseError::indexed("ציפה לערך", token_iter.index));
 
             operators.push(operator);
             base_values.push(base_value);

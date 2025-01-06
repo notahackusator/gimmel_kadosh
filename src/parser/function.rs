@@ -25,11 +25,13 @@ impl Parseable for Function {
             ], None),
         ]);
 
-        let map = huh!(token_iter start var_start_regex.try_parse(token_iter));
+        let map = chain_err!(token_iter start var_start_regex.try_parse(token_iter),
+            err: ParseError::new("בתוך פעולה"));
         #[allow(suspicious_double_ref_op)]
         let name = map.get("name").unwrap().clone().clone();
 
-        let mut parentheses = huh!(token_iter start TokenEnclosing::parentheses().try_parse(token_iter));
+        let mut parentheses = chain_err!(token_iter start TokenEnclosing::parentheses().try_parse(token_iter),
+            err: ParseError::new("בתוך פעולה"));
         let mut params = vec![];
 
         let param = TokenRule::Id;
@@ -45,11 +47,13 @@ impl Parseable for Function {
 
         let mut code = vec![];
 
-        let mut code_iter = huh!(token_iter start TokenEnclosing::parentheses().try_parse(token_iter));
+        let mut code_iter = chain_err!(token_iter start TokenEnclosing::parentheses().try_parse(token_iter),
+            err: ParseError::new("בתוך פעולה"));
         while code_iter.has_next() {
             let node = Node::try_parse(&mut code_iter);
 
-            code.push(huh!(token_iter start node));
+            code.push(chain_err!(token_iter start node,
+                err: ParseError::new("בתוך פעולה")));
         }
 
         ParseResult::Ok(Self {

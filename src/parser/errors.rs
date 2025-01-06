@@ -94,3 +94,55 @@ impl FormatInCode for Vec<ParseError> {
         msg
     }
 }
+
+macro_rules! chain_err {
+    ($token_iter:ident $start_index:ident $value:expr, err: $err:expr) => {
+        match $value {
+            crate::parser::prelude::ParseResult::Ok(x) => x,
+            crate::parser::prelude::ParseResult::Err(mut errors) => {
+                errors.push($err);
+                let errors = crate::parser::prelude::ParseResult::Err(errors);
+                result!($token_iter $start_index errors);
+            },
+            crate::parser::prelude::ParseResult::Skip =>
+                result!($token_iter $start_index crate::parser::prelude::ParseResult::Skip)
+        }
+    };
+
+    ($token_iter:ident $start_index:ident $value:expr, err: $err:expr, skip: $skip_err:expr) => {
+        match $value {
+            crate::parser::prelude::ParseResult::Ok(x) => x,
+            crate::parser::prelude::ParseResult::Err(mut errors) => {
+                errors.push($err);
+                let errors = crate::parser::prelude::ParseResult::Err(errors);
+                result!($token_iter $start_index errors);
+            },
+            crate::parser::prelude::ParseResult::Skip => {
+                let errors = crate::parser::prelude::ParseResult::Err(vec![$skip_err]);
+                result!($token_iter $start_index errors)
+            }
+        }
+    };
+}
+
+macro_rules! huh {
+    ($x:expr) => {
+        match $x {
+            crate::parser::prelude::ParseResult::Ok(x) => x,
+            crate::parser::prelude::ParseResult::Err(err) => return crate::parser::prelude::ParseResult::Err(err),
+            crate::parser::prelude::ParseResult::Skip => return crate::parser::prelude::ParseResult::Skip
+        }
+    };
+
+    ($token_iter:ident $start_index:ident $x:expr) => {
+        match $x {
+            crate::parser::prelude::ParseResult::Ok(x) => x,
+            crate::parser::prelude::ParseResult::Err(err) =>
+                result!($token_iter $start_index crate::parser::prelude::ParseResult::Err(err)),
+            crate::parser::prelude::ParseResult::Skip =>
+                result!($token_iter $start_index crate::parser::prelude::ParseResult::Skip)
+        }
+    }
+}
+
+pub(crate) use {huh, chain_err};

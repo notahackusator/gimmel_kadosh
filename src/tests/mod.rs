@@ -330,7 +330,8 @@ mod parser {
         let variable = Var::try_parse(&mut token_iter);
 
         assert_eq!(variable, ParseResult::Err(vec![
-            ParseError::indexed("ציפה לביטוי", 5)
+            ParseError::indexed("ציפה לערך התחלתי עבור ביטוי", 5),
+            ParseError::new("בתוך משתנה")
         ]));
 
         let tokens = interpret("ויהי משתנה ושמו אלף", &Regexes::default());
@@ -338,7 +339,8 @@ mod parser {
         let variable = Var::try_parse(&mut token_iter);
 
         assert_eq!(variable, ParseResult::Err(vec![
-            ParseError::indexed("ציפה למילה 'וערכו', אך לא נמצאו אסימונים", 4)
+            ParseError::indexed("ציפה למילה 'וערכו', אך לא נמצאו אסימונים", 4),
+            ParseError::new("בתוך משתנה")
         ]));
 
         let tokens = interpret("ויהי משתנה ושמו", &Regexes::default());
@@ -346,7 +348,8 @@ mod parser {
         let variable = Var::try_parse(&mut token_iter);
 
         assert_eq!(variable, ParseResult::Err(vec![
-            ParseError::indexed("המשתנה ציפה לשם, אך לא נמצאו אסימונים", 3)
+            ParseError::indexed("המשתנה ציפה לשם, אך לא נמצאו אסימונים", 3),
+            ParseError::new("בתוך משתנה")
         ]));
     }
 
