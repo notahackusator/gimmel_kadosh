@@ -8,6 +8,7 @@ mod token_regex;
 mod conditionals;
 mod function;
 mod structs;
+mod change;
 
 pub mod prelude {
     pub use super::token_iter::*;
@@ -20,4 +21,5 @@ pub mod prelude {
     pub use super::conditionals::*;
     pub use super::function::*;
     pub use super::structs::*;
+    pub use super::change::*;
 }

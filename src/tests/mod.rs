@@ -849,4 +849,106 @@ mod parser {
             },
         ));
     }
+
+    #[test]
+    pub fn changes() {
+        let tokens = interpret(r#"
+        שנה את אחד להיות 2:
+        שנה את משהו להיות בן_אדם חדש(
+            "מא",
+            "בולז",
+            "לול"
+        ):
+        "#, &Regexes::default());
+        let mut token_iter = TokenIter::new(&tokens);
+        assert_eq!(Change::try_parse(&mut token_iter), ParseResult::Ok(
+            Change {
+                name: Token {
+                    token_type: TokenType::Identifier(
+                        "אחד".to_string(),
+                    ),
+                    line: 2,
+                    col: 16,
+                },
+                value: Expression {
+                    base_values: Box::new([
+                        BaseValue::Value {
+                            token: Token {
+                                token_type: TokenType::Integer(
+                                    "2".to_string(),
+                                ),
+                                line: 2,
+                                col: 26,
+                            },
+                        },
+                    ]),
+                    operators: Box::new([]),
+                },
+            }
+        ));
+        while Eol::try_parse(&mut token_iter).is_ok() {}
+        assert_eq!(Change::try_parse(&mut token_iter), ParseResult::Ok(
+            Change {
+                name: Token {
+                    token_type: TokenType::Identifier(
+                        "משהו".to_string(),
+                    ),
+                    line: 3,
+                    col: 16,
+                },
+                value: Expression {
+                    base_values: Box::new([
+                        BaseValue::Constructor {
+                            structure: Token {
+                                token_type: TokenType::Identifier(
+                                    "בן_אדם".to_string()
+                                ),
+                                line: 3,
+                                col: 27,
+                            },
+                            parameters: Box::new([
+                                Expression {
+                                    base_values: Box::new([
+                                        BaseValue::Value {
+                                            token: Token {
+                                                token_type: TokenType::String("\"מא\"".to_string()),
+                                                line: 4,
+                                                col: 13
+                                            }
+                                        }
+                                    ]),
+                                    operators: Box::new([])
+                                },
+                                Expression {
+                                    base_values: Box::new([
+                                        BaseValue::Value {
+                                            token: Token {
+                                                token_type: TokenType::String("\"בולז\"".to_string()),
+                                                line: 5,
+                                                col: 13
+                                            }
+                                        }
+                                    ]),
+                                    operators: Box::new([])
+                                },
+                                Expression {
+                                    base_values: Box::new([
+                                        BaseValue::Value {
+                                            token: Token {
+                                                token_type: TokenType::String("\"לול\"".to_string()),
+                                                line: 6,
+                                                col: 13
+                                            }
+                                        }
+                                    ]),
+                                    operators: Box::new([])
+                                },
+                            ]),
+                        }
+                    ]),
+                    operators: Box::new([]),
+                },
+            }
+        ));
+    }
 }
