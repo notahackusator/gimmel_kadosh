@@ -134,8 +134,17 @@ impl TokenEnclosing {
         Self {
             open: TokenRule::Divider("(".to_string()),
             close: TokenRule::Divider(")".to_string()),
-            open_fail: "Expected '('".to_string(),
-            close_fail: "Expected ')'".to_string()
+            open_fail: "ציפה ל (".to_string(),
+            close_fail: "ציפה ל )".to_string()
+        }
+    }
+
+    pub fn square_brackets() -> Self {
+        Self {
+            open: TokenRule::Divider("[".to_string()),
+            close: TokenRule::Divider("]".to_string()),
+            open_fail: "ציפה ל [".to_string(),
+            close_fail: "ציפה ל ]".to_string()
         }
     }
 

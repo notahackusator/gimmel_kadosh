@@ -102,7 +102,8 @@ mod parser {
         let mut token_iter = TokenIter::new(&tokens);
         let expression = Expression::try_parse(&mut token_iter);
 
-        assert_eq!(expression, ParseResult::Ok(Expression {
+        assert_eq!(expression, ParseResult::Ok(
+            Expression {
             base_values: vec![
                 BaseValue::Value {
                     token: Token {
@@ -126,7 +127,8 @@ mod parser {
             operators: vec![
                 Operator::Add
             ].into()
-        }));
+        }
+        ));
 
 
         let tokens = interpret(r#"1 ועוד "2" פחות 4 כפול פעולה(2 חלקי 3, 4 שארית 2)"#, &Regexes::default());
@@ -230,6 +232,163 @@ mod parser {
                     Operator::Sub,
                     Operator::Mul,
                 ]),
+            },
+        ));
+
+
+        let tokens = interpret("[1 ועוד 2, חזקה(2, 1 חלקי 2)]", &Regexes::default());
+        let mut token_iter = TokenIter::new(&tokens);
+        let expression = Expression::try_parse(&mut token_iter);
+
+        assert_eq!(expression, ParseResult::Ok(
+            Expression {
+                base_values: Box::new([
+                    BaseValue::Array {
+                        items: Box::new([
+                            Expression {
+                                base_values: Box::new([
+                                    BaseValue::Value {
+                                        token: Token {
+                                            token_type: TokenType::Integer(
+                                                "1".to_string(),
+                                            ),
+                                            line: 1,
+                                            col: 2,
+                                        },
+                                    },
+                                    BaseValue::Value {
+                                        token: Token {
+                                            token_type: TokenType::Integer(
+                                                "2".to_string(),
+                                            ),
+                                            line: 1,
+                                            col: 9,
+                                        },
+                                    },
+                                ]),
+                                operators: Box::new([
+                                    Operator::Add,
+                                ]),
+                            },
+                            Expression {
+                                base_values: Box::new([
+                                    BaseValue::FunctionCall {
+                                        name: Token {
+                                            token_type: TokenType::Identifier(
+                                                "חזקה".to_string(),
+                                            ),
+                                            line: 1,
+                                            col: 12,
+                                        },
+                                        parameters: Box::new([
+                                            Expression {
+                                                base_values: Box::new([
+                                                    BaseValue::Value {
+                                                        token: Token {
+                                                            token_type: TokenType::Integer(
+                                                                "2".to_string(),
+                                                            ),
+                                                            line: 1,
+                                                            col: 17,
+                                                        },
+                                                    },
+                                                ]),
+                                                operators: Box::new([]),
+                                            },
+                                            Expression {
+                                                base_values: Box::new([
+                                                    BaseValue::Value {
+                                                        token: Token {
+                                                            token_type: TokenType::Integer(
+                                                                "1".to_string(),
+                                                            ),
+                                                            line: 1,
+                                                            col: 20,
+                                                        },
+                                                    },
+                                                    BaseValue::Value {
+                                                        token: Token {
+                                                            token_type: TokenType::Integer(
+                                                                "2".to_string(),
+                                                            ),
+                                                            line: 1,
+                                                            col: 27,
+                                                        },
+                                                    },
+                                                ]),
+                                                operators: Box::new([
+                                                    Operator::Div,
+                                                ]),
+                                            },
+                                        ]),
+                                    },
+                                ]),
+                                operators: Box::new([]),
+                            },
+                        ]),
+                    },
+                ]),
+                operators: Box::new([]),
+            },
+        ));
+
+        let tokens = interpret("מערך[מערך[אורך] חלקי 2]", &Regexes::default());
+        let mut token_iter = TokenIter::new(&tokens);
+        let expression = Expression::try_parse(&mut token_iter);
+
+        assert_eq!(expression, ParseResult::Ok(
+            Expression {
+                base_values: Box::new([
+                    BaseValue::Index {
+                        name: Token {
+                            token_type: TokenType::Identifier(
+                                "מערך".to_string(),
+                            ),
+                            line: 1,
+                            col: 1,
+                        },
+                        index: Box::new(Expression {
+                            base_values: Box::new([
+                                BaseValue::Index {
+                                    name: Token {
+                                        token_type: TokenType::Identifier(
+                                            "מערך".to_string(),
+                                        ),
+                                        line: 1,
+                                        col: 6,
+                                    },
+                                    index: Box::new(Expression {
+                                        base_values: Box::new([
+                                            BaseValue::Value {
+                                                token: Token {
+                                                    token_type: TokenType::Identifier(
+                                                        "אורך".to_string(),
+                                                    ),
+                                                    line: 1,
+                                                    col: 11,
+                                                },
+                                            },
+                                        ]),
+                                        operators: Box::new([]),
+                                    }),
+                                },
+                                BaseValue::Value {
+                                    token: Token {
+                                        token_type: TokenType::Integer(
+                                            "2".to_string(),
+                                        ),
+                                        line: 1,
+                                        col: 22,
+                                    },
+                                },
+                            ]),
+                            operators: Box::new([
+                                Operator::Div,
+                            ]),
+                        }),
+                    },
+                ]),
+                operators: Box::new([]),
             },
         ));
     }
