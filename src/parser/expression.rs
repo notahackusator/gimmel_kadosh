@@ -47,90 +47,58 @@ impl Parseable for Expression {
 #[derive(Clone, Debug, PartialEq)]
 pub enum BaseValue {
     Value {
-        token: Token
+        // יכול להיות לדוגמה (מספר) *או* (מערך שבתוכו אורך)
+        value: Result<Path, Token>
     },
     FunctionCall {
-        name: Token,
+        executable: Path,
         parameters: Box<[Expression]>
     },
     Constructor {
-        structure: Token,
+        structure: Path,
         parameters: Box<[Expression]>
     },
     Array {
         items: Box<[Expression]>
     },
     Index {
-        name: Token,
+        array: Path,
         index: Box<Expression>
     }
 }
 
 impl Parseable for BaseValue {
     fn try_parse(token_iter: &mut TokenIter) -> ParseResult<Self> {
+        parse_start!(token_iter start);
+
         let comma = TokenRule::Divider(",".to_string());
 
-        let square_brackets = TokenEnclosing::square_brackets();
-        match square_brackets.try_parse(token_iter) {
-            ParseResult::Ok(mut item_iter) => {
-                let mut items = vec![];
-                while item_iter.has_next() {
-                    match Expression::try_parse(&mut item_iter) {
-                        ParseResult::Ok(expr) => items.push(expr),
-                        ParseResult::Err(err) => return ParseResult::Err(err),
-                        ParseResult::Skip => unreachable!()
-                    }
-
-                    if !item_iter.has_next() {
-                        break;
-                    }
-
-                    let next = item_iter.next().unwrap();
-                    if !comma.matches(&next.token_type) {
-                        return ParseResult::Err(vec![ParseError::indexed(
-                            format!("ציפה לפסיק, מצא {}", next.token_type),
-                            item_iter.index - 1
-                        )]);
-                    }
-                }
-                return ParseResult::Ok(Self::Array {
-                    items: items.into_boxed_slice()
-                });
-            },
-            ParseResult::Err(errors) => {
-                let err = &errors[0];
-                if err.get_reason() != &square_brackets.open_fail {
-                    return ParseResult::Err(errors);
-                }
-            }
-            ParseResult::Skip => unreachable!()
+        match try_parse_array(token_iter) {
+            ParseResult::Ok(array) => return ParseResult::Ok(array),
+            ParseResult::Err(err) => return ParseResult::Err(err),
+            ParseResult::Skip => {}
         }
 
-        let name_regex = TokenRegex::new(vec![
-            TokenSequence::new(Some("name".to_string()), TokenRule::Id, vec![], None),
+        let value_regex = TokenRegex::new(vec![
             TokenSequence::new(Some("value".to_string()), TokenRule::Value, vec![], None)
         ]);
-        let name = match name_regex.try_parse(token_iter) {
-            ParseResult::Ok(map) => {
-                #[allow(suspicious_double_ref_op)] // <--
-                if let Some(name) = map.get("name") {
-                    name.clone()
-                } else {
-                    return ParseResult::Ok(Self::Value {
-                        token: map.get("value").unwrap().clone().clone() // <--
-                    });
-                }
-            }
-            ParseResult::Err(err) => return ParseResult::Err(err),
-            ParseResult::Skip => return ParseResult::Skip
-        };
+        #[allow(suspicious_double_ref_op)]
+        match value_regex.try_parse(token_iter) {
+            ParseResult::Ok(value) => return ParseResult::Ok(Self::Value {
+                value: Err(value.get("value").unwrap().clone().clone())
+            }),
+            _ => {}
+        }
+
+        let path = chain_err!(token_iter start Path::try_parse(token_iter),
+            err: ParseError::new("בתוך ערך"));
 
         let constructor_regex = TokenRegex::new(vec![
             TokenSequence::new(None, TokenRule::UniqueId("חדש".to_string()), vec![], None)
         ]);
         if constructor_regex.try_parse(token_iter).is_ok() {
             return ParseResult::Ok(Self::Constructor {
-                structure: name.clone(),
+                structure: path.clone(),
                 parameters: huh!(parse_fn_call_params(token_iter)).into_boxed_slice()
             });
         }
@@ -145,21 +113,63 @@ impl Parseable for BaseValue {
                 token_iter.index -= 1;
                 match map.get("p") {
                     Some(_) => ParseResult::Ok(Self::FunctionCall {
-                        name: name.clone(),
+                        executable: path.clone(),
                         parameters: huh!(parse_fn_call_params(token_iter)).into_boxed_slice()
                     }),
                     None => ParseResult::Ok(Self::Index {
-                        name: name.clone(),
+                        array: path.clone(),
                         index: Box::new(huh!(parse_index(token_iter)))
                     })
                 }
             }
             ParseResult::Skip => ParseResult::Ok(Self::Value {
-                token: name.clone(),
+                value: Ok(path.clone()),
             }),
             _ => unreachable!()
         }
     }
+}
+
+fn try_parse_array(token_iter: &mut TokenIter) -> ParseResult<BaseValue> {
+    let comma = TokenRule::Divider(",".to_string());
+
+    let square_brackets = TokenEnclosing::square_brackets();
+    match square_brackets.try_parse(token_iter) {
+        ParseResult::Ok(mut item_iter) => {
+            let mut items = vec![];
+            while item_iter.has_next() {
+                match Expression::try_parse(&mut item_iter) {
+                    ParseResult::Ok(expr) => items.push(expr),
+                    ParseResult::Err(err) => return ParseResult::Err(err),
+                    ParseResult::Skip => unreachable!()
+                }
+
+                if !item_iter.has_next() {
+                    break;
+                }
+
+                let next = item_iter.next().unwrap();
+                if !comma.matches(&next.token_type) {
+                    return ParseResult::Err(vec![ParseError::indexed(
+                        format!("ציפה לפסיק, מצא {}", next.token_type),
+                        item_iter.index - 1
+                    )]);
+                }
+            }
+            return ParseResult::Ok(BaseValue::Array {
+                items: items.into_boxed_slice()
+            });
+        },
+        ParseResult::Err(errors) => {
+            let err = &errors[0];
+            if err.get_reason() != &square_brackets.open_fail {
+                return ParseResult::Err(errors);
+            }
+        }
+        ParseResult::Skip => unreachable!()
+    }
+
+    ParseResult::Skip
 }
 
 fn parse_index(token_iter: &mut TokenIter) -> ParseResult<Expression> {
@@ -266,3 +276,47 @@ impl Parseable for Operator {
         }
     }
 }
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Path {
+    pub path: Box<[Token]>
+}
+
+impl Parseable for Path {
+    fn try_parse(token_iter: &mut TokenIter) -> ParseResult<Self> {
+        let mut path = vec![];
+        let start = TokenRegex::new(vec![TokenSequence::new(
+            Some("start".to_string()), TokenRule::Id, vec![], Some("ציפה לשם".to_string())
+        )]);
+        #[allow(suspicious_double_ref_op)]
+        path.push(huh!(start.try_parse(token_iter)).get("start").unwrap().clone().clone());
+        let continuation = TokenRegex::new(vec![TokenSequence::new(
+            None, TokenRule::UniqueId("שבתוכו".to_string()), vec![TokenSequence::new(
+                Some("token".to_string()), TokenRule::Id, vec![
+
+                ], Some("ציפה לשם".to_string())
+            )], None
+        )]);
+        #[allow(suspicious_double_ref_op)]
+        while token_iter.has_next() {
+            match continuation.try_parse(token_iter) {
+                ParseResult::Ok(map) => path.push(map.get("start").unwrap().clone().clone()),
+                ParseResult::Err(err) => return ParseResult::Err(err),
+                ParseResult::Skip => break
+            }
+        }
+        ParseResult::Ok(Self {
+            path: path.into_boxed_slice()
+        })
+    }
+}
+
+macro_rules! new_path {
+    ($($token:expr),*$(,)?) => {
+        crate::parser::prelude::Path {
+            path: vec![$($token),*].into_boxed_slice()
+        }
+    };
+}
+
+pub(crate) use new_path;

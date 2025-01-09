@@ -15,8 +15,8 @@ impl TokenRule {
         match (self, token_type) {
             (TokenRule::Id, TokenType::Identifier(_)) => true,
             (TokenRule::UniqueId(id1), TokenType::Identifier(id2)) => id1 == id2,
-            (TokenRule::Value, TokenType::Identifier(_) | TokenType::String(_) |
-                    TokenType::Integer(_) | TokenType::Decimal(_, _) | TokenType::Char(_)) => true,
+            (TokenRule::Value, TokenType::String(_) | TokenType::Integer(_) |
+                TokenType::Decimal(_, _) | TokenType::Char(_)) => true,
             (TokenRule::Divider(div1), TokenType::Divider(div2)) => div1 == div2,
             _ => false
         }

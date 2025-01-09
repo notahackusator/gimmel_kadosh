@@ -4,7 +4,7 @@ use crate::parser::prelude::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Break {
-    loop_name: Option<Token>
+    pub loop_name: Option<Token>
 }
 
 impl Parseable for Break {
@@ -34,7 +34,7 @@ impl Parseable for Break {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Continue {
-    loop_name: Option<Token>
+    pub loop_name: Option<Token>
 }
 
 impl Parseable for Continue {

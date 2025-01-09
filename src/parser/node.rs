@@ -56,10 +56,6 @@ impl Parseable for Node {
             ParseResult::Err(vec) => return ParseResult::Err(vec),
             ParseResult::Skip => {},
         }
-        match Expression::try_parse(token_iter) {
-            ParseResult::Ok(x) => return ParseResult::Ok(Self::Expression(x)),
-            _ => {}
-        }
         match Function::try_parse(token_iter) {
             ParseResult::Ok(x) => return ParseResult::Ok(Self::Function(x)),
             ParseResult::Err(vec) => return ParseResult::Err(vec),
@@ -89,6 +85,10 @@ impl Parseable for Node {
             ParseResult::Ok(x) => return ParseResult::Ok(Self::While(x)),
             ParseResult::Err(vec) => return ParseResult::Err(vec),
             ParseResult::Skip => {},
+        }
+        match Expression::try_parse(token_iter) {
+            ParseResult::Ok(x) => return ParseResult::Ok(Self::Expression(x)),
+            _ => {}
         }
         match Eol::try_parse(token_iter) {
             ParseResult::Ok(_) => return ParseResult::Ok(Self::Eol),
