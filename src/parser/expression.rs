@@ -303,7 +303,7 @@ impl Parseable for Path {
         #[allow(suspicious_double_ref_op)]
         while token_iter.has_next() {
             match continuation.try_parse(token_iter) {
-                ParseResult::Ok(map) => path.push(map.get("start").unwrap().clone().clone()),
+                ParseResult::Ok(map) => path.push(map.get("token").unwrap().clone().clone()),
                 ParseResult::Err(err) => return ParseResult::Err(err),
                 ParseResult::Skip => break
             }

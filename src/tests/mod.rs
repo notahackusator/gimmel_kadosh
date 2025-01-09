@@ -133,6 +133,51 @@ mod parser {
         ));
 
 
+        let tokens = interpret("מתמטיקה שבתוכו שורש_ריבועי(2)", &Regexes::default());
+        let mut token_iter = TokenIter::new(&tokens);
+        let expression = Expression::try_parse(&mut token_iter);
+
+        assert_eq!(expression, ParseResult::Ok(
+            Expression {
+                base_values: Box::new([
+                    BaseValue::FunctionCall {
+                        executable: new_path![
+                            Token::new(
+                                TokenType::Identifier("מתמטיקה".to_string()),
+                                1,
+                                1
+                            ),
+                            Token::new(
+                                TokenType::Identifier("שורש_ריבועי".to_string()),
+                                1,
+                                16
+                            )
+                        ],
+                        parameters: Box::new([
+                            Expression {
+                                base_values: Box::new([
+                                    BaseValue::Value {
+                                        value: Err(
+                                            Token {
+                                                token_type: TokenType::Integer(
+                                                    "2".to_string(),
+                                                ),
+                                                line: 1,
+                                                col: 28,
+                                            },
+                                        )
+                                    }
+                                ]),
+                                operators: Box::new([]),
+                            }
+                        ])
+                    },
+                ]),
+                operators: Box::new([]),
+            }
+        ));
+
+
         let tokens = interpret(r#"1 ועוד "2" פחות 4 כפול פעולה(2 חלקי 3, 4 שארית 2)"#, &Regexes::default());
         let mut token_iter = TokenIter::new(&tokens);
         let expression = Expression::try_parse(&mut token_iter);
