@@ -70,6 +70,9 @@ pub enum BaseValue {
 impl Parseable for BaseValue {
     fn try_parse(token_iter: &mut TokenIter) -> ParseResult<Self> {
         parse_start!(token_iter start);
+        if !token_iter.has_next() {
+            return ParseResult::Skip;
+        }
 
         let comma = TokenRule::Divider(",".to_string());
 

@@ -169,14 +169,14 @@ mod parser {
                     },
                     BaseValue::FunctionCall {
                         executable: new_path![
-                    Token {
-                        token_type: TokenType::Identifier(
-                            "פעולה".to_string(),
-                        ),
-                        line: 1,
-                        col: 24,
-                    },
-                ],
+                            Token {
+                                token_type: TokenType::Identifier(
+                                    "פעולה".to_string(),
+                                ),
+                                line: 1,
+                                col: 24,
+                            },
+                        ],
                         parameters: Box::new([
                             Expression {
                                 base_values: Box::new([
@@ -278,14 +278,14 @@ mod parser {
                                 base_values: Box::new([
                                     BaseValue::FunctionCall {
                                         executable: new_path![
-                                    Token {
-                                        token_type: TokenType::Identifier(
-                                            "חזקה".to_string(),
-                                        ),
-                                        line: 1,
-                                        col: 12,
-                                    },
-                                ],
+                                            Token {
+                                                token_type: TokenType::Identifier(
+                                                    "חזקה".to_string(),
+                                                ),
+                                                line: 1,
+                                                col: 12,
+                                            },
+                                        ],
                                         parameters: Box::new([
                                             Expression {
                                                 base_values: Box::new([
@@ -347,26 +347,26 @@ mod parser {
                 base_values: Box::new([
                     BaseValue::Index {
                         array: new_path![
-                    Token {
-                        token_type: TokenType::Identifier(
-                            "מערך".to_string(),
-                        ),
-                        line: 1,
-                        col: 1,
-                    },
-                ],
+                            Token {
+                                token_type: TokenType::Identifier(
+                                    "מערך".to_string(),
+                                ),
+                                line: 1,
+                                col: 1,
+                            },
+                        ],
                         index: Box::new(Expression {
                             base_values: Box::new([
                                 BaseValue::Index {
                                     array: new_path![
-                                Token {
-                                    token_type: TokenType::Identifier(
-                                        "מערך".to_string(),
-                                    ),
-                                    line: 1,
-                                    col: 6,
-                                },
-                            ],
+                                        Token {
+                                            token_type: TokenType::Identifier(
+                                                "מערך".to_string(),
+                                            ),
+                                            line: 1,
+                                            col: 6,
+                                        },
+                                    ],
                                     index: Box::new(Expression {
                                         base_values: Box::new([
                                             BaseValue::Value {
@@ -411,10 +411,7 @@ mod parser {
         let mut token_iter = TokenIter::new(&tokens);
         let expression = Expression::try_parse(&mut token_iter);
 
-        //todo: this is a bit excessive...
         assert_eq!(expression, ParseResult::Err(vec![
-            ParseError::indexed("ציפה לשם, אך לא נמצאו אסימונים", 2),
-            ParseError::new("בתוך ערך"),
             ParseError::indexed("ציפה לערך", 2)
         ]));
 
@@ -496,7 +493,7 @@ mod parser {
             },
         ));
     }
-/*
+
     #[test]
     pub fn variable_errors() {
         let tokens = interpret("ויהי משתנה ושמו אחד וערכו", &Regexes::default());
@@ -525,7 +522,7 @@ mod parser {
             ParseError::indexed("המשתנה ציפה לשם, אך לא נמצאו אסימונים", 3),
             ParseError::new("בתוך משתנה")
         ]));
-    }*/
+    }
 
     #[test]
     pub fn conditionals() {
@@ -761,12 +758,12 @@ mod parser {
                                     base_values: Box::new([
                                         BaseValue::FunctionCall {
                                             executable: new_path![
-                                        Token {
-                                            token_type: TokenType::Identifier("ויאמר".to_string()),
-                                            line: 12,
-                                            col: 13,
-                                        },
-                                    ],
+                                                Token {
+                                                    token_type: TokenType::Identifier("ויאמר".to_string()),
+                                                    line: 12,
+                                                    col: 13,
+                                                },
+                                            ],
                                             parameters: Box::new([
                                                 Expression {
                                                     base_values: Box::new([
@@ -919,12 +916,12 @@ mod parser {
                     base_values: Box::new([
                         BaseValue::Constructor {
                             structure: new_path![
-                        Token {
-                            token_type: TokenType::Identifier("בן_אדם".to_string()),
-                            line: 8,
-                            col: 24,
-                        },
-                    ],
+                                Token {
+                                    token_type: TokenType::Identifier("בן_אדם".to_string()),
+                                    line: 8,
+                                    col: 24,
+                                },
+                            ],
                             parameters: Box::new([
                                 Expression {
                                     base_values: Box::new([
