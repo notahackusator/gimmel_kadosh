@@ -66,6 +66,14 @@ r#"
 
 #[cfg(test)]
 mod parser {
+    macro_rules! new_box {
+        ($($x:expr),*$(,)?) => {
+            vec![
+                $($x),*
+            ].into_boxed_slice()
+        };
+    }
+
     use crate::lexer::prelude::*;
     use crate::parser::prelude::*;
 
@@ -130,6 +138,63 @@ mod parser {
                     Operator::Add,
                 ].into(),
             }
+        ));
+
+
+        let tokens = interpret("(1 ועוד 2) כפול 3", &Regexes::default());
+        let mut token_iter = TokenIter::new(&tokens);
+        let expression = Expression::try_parse(&mut token_iter);
+
+        assert_eq!(expression, ParseResult::Ok(
+            Expression {
+                base_values: vec![
+                    BaseValue::SubExpression {
+                        expression: Box::new(Expression {
+                            base_values: new_box![
+                                BaseValue::Value {
+                                    value: Err(
+                                        Token {
+                                            token_type: TokenType::Integer(
+                                                "1".to_string(),
+                                            ),
+                                            line: 1,
+                                            col: 2,
+                                        },
+                                    ),
+                                },
+                                BaseValue::Value {
+                                    value: Err(
+                                        Token {
+                                            token_type: TokenType::Integer(
+                                                "2".to_string(),
+                                            ),
+                                            line: 1,
+                                            col: 9,
+                                        },
+                                    ),
+                                },
+                            ],
+                            operators: vec![
+                                Operator::Add,
+                            ].into(),
+                        }),
+                    },
+                    BaseValue::Value {
+                        value: Err(
+                            Token {
+                                token_type: TokenType::Integer(
+                                    "3".to_string(),
+                                ),
+                                line: 1,
+                                col: 17,
+                            },
+                        ),
+                    },
+                ].into(),
+                operators: vec![
+                    Operator::Mul,
+                ].into(),
+            },
         ));
 
 

@@ -4,8 +4,8 @@ use crate::parser::token_iter;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct If {
-    pub(crate) condition: Expression,
-    pub(crate) code: Vec<Node>
+    pub condition: Expression,
+    pub code: Vec<Node>
 }
 
 impl Parseable for If {

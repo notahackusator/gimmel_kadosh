@@ -64,6 +64,9 @@ pub enum BaseValue {
     Index {
         array: Path,
         index: Box<Expression>
+    },
+    SubExpression {
+        expression: Box<Expression>
     }
 }
 
@@ -74,7 +77,11 @@ impl Parseable for BaseValue {
             return ParseResult::Skip;
         }
 
-        let comma = TokenRule::Divider(",".to_string());
+        match try_parse_sub_expr(token_iter) {
+            ParseResult::Ok(array) => return ParseResult::Ok(array),
+            ParseResult::Err(err) => return ParseResult::Err(err),
+            ParseResult::Skip => {}
+        }
 
         match try_parse_array(token_iter) {
             ParseResult::Ok(array) => return ParseResult::Ok(array),
@@ -131,6 +138,28 @@ impl Parseable for BaseValue {
             _ => unreachable!()
         }
     }
+}
+
+fn try_parse_sub_expr(token_iter: &mut TokenIter) -> ParseResult<BaseValue> {
+    let comma = TokenRule::Divider(",".to_string());
+
+    let parentheses = TokenEnclosing::parentheses();
+    match parentheses.try_parse(token_iter) {
+        ParseResult::Ok(mut expression_iter) => {
+            return ParseResult::Ok(BaseValue::SubExpression {
+                expression: Box::new(huh!(Expression::try_parse(&mut expression_iter)))
+            });
+        }
+        ParseResult::Err(errors) => {
+            let err = &errors[0];
+            if err.get_reason() != &parentheses.open_fail {
+                return ParseResult::Err(errors);
+            }
+        }
+        ParseResult::Skip => unreachable!()
+    }
+
+    ParseResult::Skip
 }
 
 fn try_parse_array(token_iter: &mut TokenIter) -> ParseResult<BaseValue> {
