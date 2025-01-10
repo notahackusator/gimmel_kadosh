@@ -91,7 +91,7 @@ mod parser {
         assert!(parsing.is_err());
         let errors = parsing.unwrap_err();
         assert_eq!(errors, vec![ParseError::Indexed {
-            reason: "Expected name after hello, found 1".to_string(),
+            reason: "Expected name after hello, מצא 1".to_string(),
             index: 1,
         }]);
     }
@@ -1292,6 +1292,157 @@ mod parser {
                         },
                     ),
                     Node::Eol,
+                ],
+            },
+        ));
+    }
+
+    #[test]
+    pub fn imports() {
+        let tokens = interpret("ייבא תגיד_שלום מתוך קובץ", &Regexes::default());
+        let mut token_iter = TokenIter::new(&tokens);
+
+        assert_eq!(Import::try_parse(&mut token_iter), ParseResult::Ok(
+            Import {
+                things: vec![
+                    new_path![
+                        Token {
+                            token_type: TokenType::Identifier(
+                                "תגיד_שלום".to_string(),
+                            ),
+                            line: 1,
+                            col: 6,
+                        },
+                    ]
+                ],
+                from: new_path![
+                    Token {
+                        token_type: TokenType::Identifier(
+                            "קובץ".to_string(),
+                        ),
+                        line: 1,
+                        col: 21,
+                    },
+                ],
+            },
+        ));
+
+        let tokens = interpret("ייבא את הכל מתוך קובץ", &Regexes::default());
+        let mut token_iter = TokenIter::new(&tokens);
+
+        assert_eq!(Import::try_parse(&mut token_iter), ParseResult::Ok(
+            Import {
+                things: vec![],
+                from: new_path![
+                    Token {
+                        token_type: TokenType::Identifier(
+                            "קובץ".to_string(),
+                        ),
+                        line: 1,
+                        col: 18,
+                    },
+                ],
+            },
+        ));
+
+        let tokens = interpret("ייבא שורש_ריבועי, כוח מתוך מתמטיקה_מהירה שבתוכו מספרים_שלמים", &Regexes::default());
+        let mut token_iter = TokenIter::new(&tokens);
+
+        assert_eq!(Import::try_parse(&mut token_iter), ParseResult::Ok(
+            Import {
+                things: vec![
+                    new_path![
+                        Token {
+                            token_type: TokenType::Identifier(
+                                "שורש_ריבועי".to_string(),
+                            ),
+                            line: 1,
+                            col: 6,
+                        },
+                    ],
+                    new_path![
+                        Token {
+                            token_type: TokenType::Identifier(
+                                "כוח".to_string(),
+                            ),
+                            line: 1,
+                            col: 19,
+                        },
+                    ]
+                ],
+                from: new_path![
+                    Token {
+                        token_type: TokenType::Identifier(
+                            "מתמטיקה_מהירה".to_string(),
+                        ),
+                        line: 1,
+                        col: 28,
+                    },
+                    Token {
+                        token_type: TokenType::Identifier(
+                            "מספרים_שלמים".to_string(),
+                        ),
+                        line: 1,
+                        col: 49,
+                    },
+                ],
+            },
+        ));
+
+        let tokens = interpret("ייבא אלף שבתוכו בית, גימל שבתוכו דלת מתוך ה שבתוכו וו", &Regexes::default());
+        let mut token_iter = TokenIter::new(&tokens);
+
+        assert_eq!(Import::try_parse(&mut token_iter), ParseResult::Ok(
+            Import {
+                things: vec![
+                    new_path![
+                        Token {
+                            token_type: TokenType::Identifier(
+                                "אלף".to_string(),
+                            ),
+                            line: 1,
+                            col: 6,
+                        },
+                        Token {
+                            token_type: TokenType::Identifier(
+                                "בית".to_string(),
+                            ),
+                            line: 1,
+                            col: 17,
+                        },
+                    ],
+                    new_path![
+                        Token {
+                            token_type: TokenType::Identifier(
+                                "גימל".to_string(),
+                            ),
+                            line: 1,
+                            col: 22,
+                        },
+                        Token {
+                            token_type: TokenType::Identifier(
+                                "דלת".to_string(),
+                            ),
+                            line: 1,
+                            col: 34,
+                        },
+                    ]
+                ],
+                from: new_path![
+                    Token {
+                        token_type: TokenType::Identifier(
+                            "ה".to_string(),
+                        ),
+                        line: 1,
+                        col: 43,
+                    },
+                    Token {
+                        token_type: TokenType::Identifier(
+                            "וו".to_string(),
+                        ),
+                        line: 1,
+                        col: 52,
+                    },
                 ],
             },
         ));

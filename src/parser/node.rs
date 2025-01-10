@@ -1,5 +1,6 @@
 use crate::lexer::prelude::*;
 use crate::parser::function::Function;
+use crate::parser::import::Import;
 use crate::parser::loops::{Break, Continue, While};
 use crate::parser::prelude::*;
 
@@ -31,6 +32,7 @@ pub enum Node {
     Break(Break),
     Continue(Continue),
     While(While),
+    Import(Import),
     Eol,
 }
 
@@ -83,6 +85,11 @@ impl Parseable for Node {
         }
         match While::try_parse(token_iter) {
             ParseResult::Ok(x) => return ParseResult::Ok(Self::While(x)),
+            ParseResult::Err(vec) => return ParseResult::Err(vec),
+            ParseResult::Skip => {},
+        }
+        match Import::try_parse(token_iter) {
+            ParseResult::Ok(x) => return ParseResult::Ok(Self::Import(x)),
             ParseResult::Err(vec) => return ParseResult::Err(vec),
             ParseResult::Skip => {},
         }

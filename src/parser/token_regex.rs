@@ -59,7 +59,7 @@ impl TokenSequence {
             return match &self.on_fail {
                 None => ParseResult::Skip,
                 Some(expected) => ParseResult::Err(vec![ParseError::indexed(
-                    format!("{expected}, found {}", &token.token_type),
+                    format!("{expected}, מצא {}", &token.token_type),
                     token_iter.index - 1
                 )])
             };
@@ -73,11 +73,12 @@ impl TokenSequence {
             return ParseResult::Ok(());
         }
 
+        let start = token_iter.index;
         for branch in &self.branches {
             match branch.try_parse_sequence(token_iter, map) {
                 ParseResult::Ok(_) => return ParseResult::Ok(()),
                 ParseResult::Err(err) => return ParseResult::Err(err),
-                _ => {}
+                _ => token_iter.index = start
             }
         }
 
