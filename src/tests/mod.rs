@@ -1512,4 +1512,65 @@ mod parser {
             },
         ));
     }
+
+    #[test]
+    pub fn code() {
+        let code = r#"
+        ייבא וקטור מתוך הספריה_הסטנדרטית:
+
+        ויהי פעולה ושמה עיקרית הלוקחת () (
+            ויהי משתנה ושמו מספר וערכו 1:
+            ויהי משתנה ושמו מתחלקים_בשלוש וערכו וקטור חדש():
+            ויהי משתנה ושמו מתחלקים_בחמש וערכו וקטור חדש():
+
+            כל עוד 1 לכל_היותר 100 (
+                אם מספר שארית 3 שווה_ל 0 (
+                    מתחלקים_בשלוש שבתוכו הוסף(מספר):
+                )
+                אם מספר שארית 5 שווה_ל 0 (
+                    מתחלקים_בחמש שבתוכו הוסף(מספר):
+                )
+                שנה את מספר להיות מספר ועוד 1:
+            )
+
+            ויאמר(מתחלקים_בשלוש):
+            ויאמר(מתחלקים_בחמש):
+        )
+        "#;
+        let tokens = interpret(code, &Regexes::default());
+        let nodes = parse(&tokens);
+        match nodes {
+            ParseResult::Ok(_) => assert!(true),
+            ParseResult::Err(err) => {
+                eprintln!("{}", err.format(&tokens, code));
+                assert!(false);
+            }
+            ParseResult::Skip => unreachable!()
+        }
+
+
+        let code = r#"
+        ויהי אוסף תכונות ושמו משתמש (
+            שם_פרטי
+            שם_משפחה
+            תאריך_לידה
+        ):
+
+        ויהי פעולה ושמה עיקרית הלוקחת () (
+            יהי משתמשים וערכו הספריה_הסטנדרטית שבתוכו מילון חדש():
+            יהי אליס וערכו משתמש חדש("אליס", "דוגמא", "1970-01-01"):
+            משתמשים שבתוכו הוסף("אליס", אליס):
+        )
+        "#;
+        let tokens = interpret(code, &Regexes::default());
+        let nodes = parse(&tokens);
+        match nodes {
+            ParseResult::Ok(_) => assert!(true),
+            ParseResult::Err(err) => {
+                eprintln!("{}", err.format(&tokens, code));
+                assert!(false);
+            }
+            ParseResult::Skip => unreachable!()
+        }
+    }
 }

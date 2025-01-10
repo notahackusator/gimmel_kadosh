@@ -46,7 +46,7 @@ impl FormatInCode for Vec<ParseError> {
                 lines.push((&code[start..i], start));
                 start = i;
             }
-            i += 1;
+            i += ch.len_utf8();
         }
         lines.push((&code[start..i], start));
 
@@ -71,7 +71,7 @@ impl FormatInCode for Vec<ParseError> {
                     };
                     let line_end: usize = lines.get(token.line).map(|(_, i)| *i).unwrap_or(code.len());
                     let line: &str = &code[line_start..line_end];
-                    msg.push_str(&format!("\n line {}: {}\n", token.line, line));
+                    msg.push_str(&format!("\n שורה {}: {}\n", token.line, line));
 
                     let length: usize =
                         match &token.token_type {
